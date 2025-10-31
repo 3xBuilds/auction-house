@@ -905,14 +905,14 @@ const LandingAuctions: React.FC = () => {
                 <div className="flex justify-center gap-2 px-1">
                   <Button
                     variant={"default"}
-                    className="w-[70%] h-12 hover:opacity-90"
+                    className="w-[70%] h-12 hover:opacity-90 text-white font-bold text-lg"
                     onClick={() => openBidDrawer(auction)}
                   >
                     Bid
                   </Button>
                   <Button
                     variant={"outline"}
-                    className="w-[30%] h-12 hover:opacity-90"
+                    className="w-[30%] h-12 hover:opacity-90 text-lg"
                     onClick={() => {
                       // Navigate to auction detail page
                       navigate(`/bid/${auction.blockchainAuctionId}`);
