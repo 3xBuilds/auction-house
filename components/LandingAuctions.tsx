@@ -99,6 +99,7 @@ const LandingAuctions: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [currentBid, setCurrentBid] = useState<{auctionId: string, amount: number} | null>(null);
   const [shareDropdownOpen, setShareDropdownOpen] = useState<string | null>(null);
+  const [currencyFilter, setCurrencyFilter] = useState<'all' | 'usdc' | 'creator-coins'>('all');
   
   // Intersection Observer ref
   const observerRef = useRef<HTMLDivElement>(null);
@@ -129,7 +130,7 @@ const LandingAuctions: React.FC = () => {
       }
       setError(null);
 
-      const response = await fetch(`/api/auctions/getTopFive?page=${pageNum}&limit=3`);
+      const response = await fetch(`/api/auctions/getTopFive?page=${pageNum}&limit=3&currency=${currencyFilter}`);
       const data: ApiResponse = await response.json();
 
       console.log("API Response:", data);
@@ -169,7 +170,7 @@ const LandingAuctions: React.FC = () => {
     if(session){
       fetchTopAuctions(1, false);
     }
-  }, [session]);
+  }, [session, currencyFilter]);
 
   // Intersection Observer for lazy loading
   useEffect(() => {
@@ -735,6 +736,82 @@ const LandingAuctions: React.FC = () => {
     );
   }
 
+  // Handle case when auctions is empty but we have a filter applied
+  if (auctions.length === 0 && currencyFilter !== 'all') {
+    return (
+      <div className="w-full max-lg:mx-auto mt-8">
+        <div className="flex flex-col items-start justify-between mb-8">
+          <h2 className="text-2xl font-bold gradient-text">Latest Auctions</h2>
+          <p className="text-caption text-sm mt-2">
+            Discover the most active auctions happening right now
+          </p>
+        </div>
+
+        {/* Currency Filter */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setCurrencyFilter('all')}
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700"
+          >
+            All
+          </button>
+          <button
+            onClick={() => setCurrencyFilter('usdc')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              currencyFilter === 'usdc'
+                ? 'bg-primary text-white'
+                : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
+            }`}
+          >
+            USDC
+          </button>
+          <button
+            onClick={() => setCurrencyFilter('creator-coins')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              currencyFilter === 'creator-coins'
+                ? 'bg-primary text-white'
+                : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
+            }`}
+          >
+            Creator Coins
+          </button>
+        </div>
+
+        <div className="bg-white/10 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-8 text-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-16 h-16 gradient-button rounded-full flex items-center justify-center">
+              <svg 
+                className="w-8 h-8 text-white" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth="2" 
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-2">No auctions found</h3>
+              <p className="text-caption mb-4">
+                No auctions match the selected filter. Try selecting a different filter.
+              </p>
+              <button
+                onClick={() => setCurrencyFilter('all')}
+                className="gradient-button text-white px-6 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity"
+              >
+                View All Auctions
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-lg:mx-auto mt-8">
       <div className="flex flex-col items-start justify-between mb-8">
@@ -742,6 +819,40 @@ const LandingAuctions: React.FC = () => {
         <p className="text-caption text-sm mt-2">
           Discover the most active auctions happening right now
         </p>
+      </div>
+
+      {/* Currency Filter */}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={() => setCurrencyFilter('all')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            currencyFilter === 'all'
+              ? 'bg-primary text-white'
+              : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
+          }`}
+        >
+          All
+        </button>
+        <button
+          onClick={() => setCurrencyFilter('usdc')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            currencyFilter === 'usdc'
+              ? 'bg-primary text-white'
+              : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
+          }`}
+        >
+          USDC
+        </button>
+        <button
+          onClick={() => setCurrencyFilter('creator-coins')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            currencyFilter === 'creator-coins'
+              ? 'bg-primary text-white'
+              : 'bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700'
+          }`}
+        >
+          Creator Coins
+        </button>
       </div>
 
       <div className="w-full grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
@@ -964,7 +1075,7 @@ const LandingAuctions: React.FC = () => {
       {/* Debug info and manual load more */}
       {process.env.NODE_ENV === 'development' && (
         <div className="mt-4 p-4 bg-gray-800 rounded">
-          <p>Debug: hasMore={String(hasMore)}, loadingMore={String(loadingMore)}, page={page}, auctionsCount={auctions.length}</p>
+          <p>Debug: hasMore={String(hasMore)}, loadingMore={String(loadingMore)}, page={page}, auctionsCount={auctions.length}, filter={currencyFilter}</p>
           {hasMore && (
             <Button 
               onClick={loadMoreAuctions} 
