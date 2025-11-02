@@ -748,10 +748,10 @@ const LandingAuctions: React.FC = () => {
         {auctions.map((auction, index) => (
           <div
             key={auction._id}
-            className="bg-primary/10 w-full border border-primary rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden"
+            className="bg-primary/10 w-full border border-primary rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col h-full"
           >
             {/* Header with ranking */}
-            <div className="gradient-button p-4 relative">
+            <div className="gradient-button p-4 relative flex-shrink-0">
               <div className="flex items-center justify-between">
                 <span className="bg-white/20 text-white text-sm font-semibold px-3 py-1 rounded-full">
                   #{index + 1}
@@ -850,12 +850,12 @@ const LandingAuctions: React.FC = () => {
             </div>
 
             {/* Content */}
-            <div className="p-4">
-              <h3 className="text-xl font-semibold text-white mb-2 line-clamp-2">
+            <div className="p-4 flex flex-col flex-grow">
+              <h3 className="text-xl font-semibold text-white mb-2 line-clamp-2 min-h-[3.5rem] flex items-start">
                 {auction.auctionName}
               </h3>
 
-              <div className="space-y-3">
+              <div className="space-y-3 flex-grow flex flex-col">
                 {/* Highest bid */}
                 <div className="flex justify-between items-center">
                   {auction.highestBid == 0 ? <>
@@ -875,31 +875,42 @@ const LandingAuctions: React.FC = () => {
                 </div>
 
                 {/* Stats */}
-                
-                  <div className="flex justify-between items-center">
-                    <div className="text-caption text-sm">Participants</div>
-                    <div className="font-semibold text-md text-white">
-                      {auction.participantCount}
-                    </div>
-                    
+                <div className="flex justify-between items-center">
+                  <div className="text-caption text-sm">Participants</div>
+                  <div className="font-semibold text-md text-white">
+                    {auction.participantCount}
                   </div>
+                </div>
 
-                  {auction.topBidder && <div className="flex justify-between items-center">
-                    <div className="text-caption text-sm">Top Bidder</div>
-                    <div className="font-semibold text-md text-white bg-white/10 rounded-full px-2 py-1 flex gap-2">
-                    <Image unoptimized alt="top bidder" src={auction.topBidder?.pfp_url || ""} width={100} height={100} className="rounded-full w-6 aspect-square"  />
-                      <h3 className="max-w-32 truncate text-md">{auction.topBidder?.username}</h3>
-                    </div>
-                    
-                  </div>}
-                
+                {/* Top Bidder - Always reserve space */}
+                <div className="flex justify-between items-center min-h-[32px]">
+                  {auction.topBidder ? (
+                    <>
+                      <div className="text-caption text-sm">Top Bidder</div>
+                      <div className="font-semibold text-md text-white bg-white/10 rounded-full px-2 py-1 flex gap-2">
+                        <Image unoptimized alt="top bidder" src={auction.topBidder?.pfp_url || ""} width={100} height={100} className="rounded-full w-6 aspect-square"  />
+                        <h3 className="max-w-32 truncate text-md">{auction.topBidder?.username}</h3>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-caption text-sm">Top Bidder</div>
+                      <div className="font-semibold text-md text-caption">
+                        No bids yet
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Spacer to push content to bottom */}
+                <div className="flex-grow"></div>
 
                 {/* Host info */}
-                <div className="border-t pt-3">
+                <div className="border-t pt-3 mt-auto">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-caption">Hosted by:</span>
                     <span 
-                      className=" text-white hover:text-primary cursor-pointer font-bold transition-colors duration-200"
+                      className=" text-primary hover:text-primary cursor-pointer font-bold transition-colors duration-200"
                       onClick={() => navigate(`/user/${auction.hostedBy._id}`)}
                     >
                       {auction.hostedBy.display_name || 

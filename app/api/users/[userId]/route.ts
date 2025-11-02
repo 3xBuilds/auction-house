@@ -12,7 +12,7 @@ export async function GET(
     const { userId } = await params;
 
     // Try to find user by wallet address first, then by ID
-    let user: any = await User.findOne({ _id: userId })
+    let user: any = await User.findOne({ wallet: userId })
       .select('wallet fid username')
       .lean();
 

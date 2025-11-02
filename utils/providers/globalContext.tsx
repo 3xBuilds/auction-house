@@ -95,8 +95,14 @@ export const GlobalProvider = ({ children }: { children: React.ReactNode }) => {
         // First, try to fetch user from database
         try {
           const dbResponse = await fetch(`/api/users/${walletAddress}`);
+
+          console.log("Database response status:", dbResponse);
+
           if (dbResponse.ok) {
             const dbUser = await dbResponse.json();
+
+            console.log("Database user fetched:", dbUser);
+
             if (dbUser.user && dbUser.user.username) {
               // Use database username and profile data
               user = {
