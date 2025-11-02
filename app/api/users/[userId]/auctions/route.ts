@@ -56,6 +56,7 @@ export async function GET(
 
         if (neynarResponse.ok) {
           const neynarData = await neynarResponse.json();
+          console.log('Neynar data for user profile extraction:', neynarData.verified_accounts);
           if (neynarData.users && neynarData.users.length > 0) {
             const neynarUser = neynarData.users[0];
             userProfile.username = neynarUser.username || user.username;
@@ -70,7 +71,7 @@ export async function GET(
       }
     } else {
       // FID starts with "none" or doesn't exist, use wallet-based defaults
-      userProfile.username = `${user.wallet.slice(0, 6)}...${user.wallet.slice(-4)}`;
+      userProfile.username = user.username ? user.username : `${user.wallet.slice(0, 6)}...${user.wallet.slice(-4)}`;
       userProfile.pfp_url = `https://api.dicebear.com/5.x/identicon/svg?seed=${user.wallet.toLowerCase()}`;
     }
 

@@ -37,6 +37,7 @@ import { checkStatus } from "@/utils/checkStatus";
 import { ethers } from "ethers";
 import { checkUsdc } from "@/utils/checkUsdc";
 import { WalletConnect } from "./Web3/walletConnect";
+import { useAccount } from "wagmi";
 
 interface Bidder {
   user: string;
@@ -45,8 +46,11 @@ interface Bidder {
 }
 
 interface HostInfo {
+  _id: string;
   wallet: string;
   username?: string;
+  display_name?: string;
+  fid?: string;
 }
 
 interface Auction {
@@ -109,12 +113,11 @@ const LandingAuctions: React.FC = () => {
   const [tokenPrice, setTokenPrice] = useState<number | null>(null);
   const [tokenPriceLoading, setTokenPriceLoading] = useState(false);
   const [priceError, setPriceError] = useState<string | null>(null);
-  
-  const { user: privyUser } = usePrivy();
+
 
   const { context } = useMiniKit();
 
-  const address = privyUser?.wallet?.address;
+  const {address} = useAccount();
   const {user} = useGlobalContext()
 
   const fetchTopAuctions = async (pageNum: number = 1, append: boolean = false) => {
@@ -895,9 +898,12 @@ const LandingAuctions: React.FC = () => {
                 <div className="border-t pt-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-caption">Hosted by:</span>
-                    <span className="font-medium text-white">
-                      {auction.hostedBy.username ||
-                        auction.hostedBy.wallet}
+                    <span 
+                      className=" text-white hover:text-primary cursor-pointer font-bold transition-colors duration-200"
+                      onClick={() => navigate(`/user/${auction.hostedBy._id}`)}
+                    >
+                      {auction.hostedBy.display_name || 
+                       (auction.hostedBy.username ? `@${auction.hostedBy.username}` : truncateAddress(auction.hostedBy.wallet))}
                     </span>
                   </div>
                 </div>

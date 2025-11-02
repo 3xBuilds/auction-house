@@ -36,6 +36,7 @@ import { checkStatus } from "@/utils/checkStatus";
 import { ethers } from "ethers";
 import { checkUsdc } from "@/utils/checkUsdc";
 import { WalletConnect } from "@/components/Web3/walletConnect";
+import { useAccount } from 'wagmi';
 
 interface Bidder {
   displayName: string;
@@ -103,9 +104,8 @@ export default function BidPage() {
   // Remove wagmi hooks for Farcaster migration
   // const { sendCalls, isSuccess, status } = useSendCalls();
   const { context } = useMiniKit();
-  const { user: privyUser } = usePrivy();
-  const address = privyUser?.wallet?.address;
   const { user } = useGlobalContext();
+  const {address} = useAccount()
   const { data: session } = useSession();
 
 

@@ -28,6 +28,8 @@ import { fetchTokenPrice, calculateUSDValue, formatUSDAmount } from "@/utils/tok
 import { motion, AnimatePresence } from "framer-motion";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { checkStatus } from "@/utils/checkStatus";
+import { useGlobalContext } from "@/utils/providers/globalContext";
+import { useAccount } from "wagmi";
 
 
 interface CurrencyOption {
@@ -39,9 +41,8 @@ interface CurrencyOption {
 type CurrencySelectionMode = "search" | "contract";
 
 export default function CreateAuction() {
-  const { user: privyUser } = usePrivy();
-  const address = privyUser?.wallet?.address;
-  const isConnected = !!privyUser?.wallet;
+  const { user } = useGlobalContext();
+  const { address, isConnected } = useAccount();
   const [auctionTitle, setAuctionTitle] = useState("");
   // const [currencyMode, setCurrencyMode] = useState<CurrencySelectionMode>('search')
   const [selectedCurrency, setSelectedCurrency] =
@@ -186,7 +187,7 @@ setIsLoading(false);
     //check if address and session exist
       if (!address || !session) {
         toast.error("Please connect your wallet");
-        return;
+        // return;
       }
     setIsLoading(true);
     e.preventDefault();
