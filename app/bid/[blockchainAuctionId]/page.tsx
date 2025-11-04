@@ -39,6 +39,7 @@ import { checkUsdc } from "@/utils/checkUsdc";
 import { WalletConnect } from "@/components/Web3/walletConnect";
 import sdk from '@farcaster/miniapp-sdk';
 import { FaShare } from 'react-icons/fa';
+import { useNavigateWithLoader } from '@/utils/useNavigateWithLoader';
 
 interface Bidder {
   displayName: string;
@@ -88,6 +89,8 @@ interface Auction {
 export default function BidPage() {
   const params = useParams();
   const blockchainAuctionId = params.blockchainAuctionId as string;
+
+  const navigate = useNavigateWithLoader();
   
   const [auctionData, setAuctionData] = useState<AuctionData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -837,7 +840,7 @@ export default function BidPage() {
           
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-2">
             <div>
-              <p className="text-xs text-caption">Hosted By</p>
+              <p className="text-xs text-caption mb-1">Hosted By</p>
               <div className="flex items-center gap-2">
                 {auctionData.hostedBy.pfp_url && (
                   <img 
@@ -847,12 +850,13 @@ export default function BidPage() {
                   />
                 )}
                 {auctionData.hostedBy._id ? (
-                  <Link 
-                    href={`/user/${auctionData.hostedBy._id}`}
-                    className="text-md font-semibold text-primary hover:text-primary/80 transition-colors"
+                  <button 
+                    onClick={() => { navigate(`/user/${auctionData.hostedBy._id}`) }}
+         
+                    className="text-md font-semibold text-primary bg-transparent px-0 hover:text-primary/80 transition-colors"
                   >
                     {auctionData.hostedBy.display_name || auctionData.hostedBy.username}
-                  </Link>
+                  </button>
                 ) : (
                   <span className="text-md font-semibold">
                     {auctionData.hostedBy.display_name || auctionData.hostedBy.username}
