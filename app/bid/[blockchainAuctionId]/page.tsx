@@ -694,7 +694,7 @@ export default function BidPage() {
     try {
       if (!auctionData) return;
       
-      const baseUrl = process.env.NEXT_PUBLIC_DOMAIN;
+      const baseUrl = "https://farcaster.xyz/miniapps/0d5aS3cWVprk/house";
       const url = `${baseUrl}/bid/${blockchainAuctionId}`;
       const hostName = auctionData.hostedBy.display_name || auctionData.hostedBy.username;
       const text = `Check out "${auctionData.auctionName}" hosted by ${hostName}! Bidding in ${auctionData.currency}.`;
