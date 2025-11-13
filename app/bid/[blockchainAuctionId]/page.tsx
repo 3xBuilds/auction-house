@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: { params: Promise<{ blockchai
         version: "next",
         imageUrl: IMAGE,
         button: {
-          title: "Bid Now!",
+          title: "View Auction",
           action: {
             type: "launch_frame",
             name: "House",
