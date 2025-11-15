@@ -61,7 +61,7 @@ export default function InfoCarousel() {
   return (
     <div className="w-full max-w-6xl mx-auto my-8 min-h-40">
       {/* Desktop: Show all cards */}
-      <div className="hidden lg:flex gap-6 justify-center">
+      <div className="hidden lg:flex gap-6 justify-start">
         {cards.map((card, index) => (
           <div key={index} className="w-80">
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-xl h-full">
