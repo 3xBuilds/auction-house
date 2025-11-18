@@ -40,6 +40,18 @@ export default function Welcome() {
             const response = await sdk.actions.addMiniApp();
             
             if (response.notificationDetails) {
+                // Save notification details to user
+                await fetch('/api/miniapp/notifications/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        wallet: user?.wallet,
+                        notificationDetails: response.notificationDetails
+                    })
+                });
+
                 toast.success("Notifications enabled! You'll receive updates on your auctions.", {
                     duration: 4000,
                 });
@@ -58,7 +70,7 @@ export default function Welcome() {
         } finally {
             setIsAddingMiniApp(false);
         }
-    }, []);
+    }, [user?.wallet]);
 
     if(context)
     return (
