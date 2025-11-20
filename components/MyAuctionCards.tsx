@@ -252,8 +252,6 @@ export default function MyAuctionCards() {
         }
 
         toast.loading("Waiting for transaction...", { id: toastId });
-
-        console.log()
         
         const tx = await writeContract.endAuction(blockchainAuctionId);
         await tx.wait(); // Wait for transaction confirmation
