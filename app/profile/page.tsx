@@ -71,7 +71,7 @@ export default function ProfilePage() {
     }
 
     fetchProfileData()
-  }, [session])
+  }, [authenticated])
 
   if (!user) {
     return (

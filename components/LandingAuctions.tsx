@@ -140,11 +140,7 @@ const LandingAuctions: React.FC = () => {
       const response = await fetch(`/api/auctions/getTopFive?page=${pageNum}&limit=3&currency=${currencyFilter}`);
       const data: ApiResponse = await response.json();
 
-      console.log("API Response:", data);
-
       if (data.success) {
-        console.log("Auctions", data.auctions);
-        console.log("HasMore:", data.hasMore, "Page:", data.page);
         if (append) {
           setAuctions(prev => [...prev, ...data.auctions]);
         } else {
@@ -164,9 +160,7 @@ const LandingAuctions: React.FC = () => {
   };
 
   const loadMoreAuctions = useCallback(() => {
-    console.log("loadMoreAuctions called:", { loadingMore, hasMore, page });
     if (!loadingMore && hasMore) {
-      console.log("Fetching page:", page + 1);
       fetchTopAuctions(page + 1, true);
     }
   }, [page, hasMore, loadingMore]);
@@ -180,9 +174,7 @@ const LandingAuctions: React.FC = () => {
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        console.log("Observer triggered:", entries[0].isIntersecting, "hasMore:", hasMore, "loadingMore:", loadingMore);
         if (entries[0].isIntersecting && hasMore && !loadingMore) {
-          console.log("Loading more auctions via observer");
           loadMoreAuctions();
         }
       },
@@ -227,8 +219,6 @@ const LandingAuctions: React.FC = () => {
 
   const processSuccess = async (auctionId: string, bidAmount: number) => {
     try {
-      console.log("Starting processSuccess with:", { auctionId, bidAmount, address });
-      
       // Call the API to save bid details in the database
       const response = await fetch(`/api/protected/auctions/${auctionId}/bid`, {
         method: 'POST',
@@ -241,9 +231,7 @@ const LandingAuctions: React.FC = () => {
         }),
       });
 
-      console.log("API Response status:", response.status);
       const data = await response.json();
-      console.log("API Response data:", data);
 
       if (!response.ok) {
         throw new Error(data.error || `API request failed with status ${response.status}`);
@@ -255,8 +243,6 @@ const LandingAuctions: React.FC = () => {
 
       // Refresh the auctions to show updated bid data
       await fetchTopAuctions(1, false);
-      
-      console.log("Successfully completed processSuccess");
       
     } catch (error) {
       console.error("Error in processSuccess:", error);
@@ -314,11 +300,9 @@ const LandingAuctions: React.FC = () => {
       try {
         toast.loading("Fetching token information...", { id: toastId });
         tokenDecimals = await getTokenDecimals(auction.tokenAddress);
-        console.log(`Token decimals for ${auction.tokenAddress}:`, tokenDecimals);
         
         // Convert bid amount to proper decimal format
         bidAmountInWei = convertBidAmountToWei(bidAmount, tokenDecimals);
-        console.log(`Bid amount ${bidAmount} converted to ${bidAmountInWei} with ${tokenDecimals} decimals`);
       } catch (error) {
         console.error("Error fetching token decimals, using default 18:", error);
         // Fallback to 18 decimals if fetching fails

@@ -71,13 +71,10 @@ export const GlobalProvider = ({ children }: { children: React.ReactNode }) => {
   const checkTwitterProfile = async () => {
     if (walletAddress) {
       try {
-        console.log('Checking Twitter profile for wallet:', walletAddress);
         const response = await fetch(`/api/users/${walletAddress}`);
         if (response.ok) {
           const userData = await response.json();
-          console.log('User data:', userData);
           const hasTwitter = !!userData.user?.twitterProfile?.id;
-          console.log('Has Twitter profile:', hasTwitter);
           setHasTwitterProfile(hasTwitter);
         }
       } catch (error) {
@@ -129,7 +126,7 @@ export const GlobalProvider = ({ children }: { children: React.ReactNode }) => {
           fid: farcasterAccount.fid,
         };
       } else if (walletAddress) {
-        // Try to fetch user from database
+        // Try to fetch user from database (single call combines both checks)
         try {
           const dbResponse = await fetch(`/api/users/${walletAddress}`);
           if (dbResponse.ok) {
@@ -142,6 +139,8 @@ export const GlobalProvider = ({ children }: { children: React.ReactNode }) => {
                 wallet: dbUser.user.wallet,
                 notificationDetails: dbUser.user.notificationDetails,
               };
+              // Set Twitter profile state from the same response
+              setHasTwitterProfile(!!dbUser.user?.twitterProfile?.id);
             }
           }
         } catch (error) {
@@ -208,8 +207,8 @@ export const GlobalProvider = ({ children }: { children: React.ReactNode }) => {
 
       // Only handle user details if Privy is ready and authenticated
       if (ready && authenticated) {
+        // handleUserDetails now combines both user fetch and Twitter check
         await handleUserDetails();
-        await checkTwitterProfile();
         
         // Check and update FID if conditions are met
         if (walletAddress && context?.user) {

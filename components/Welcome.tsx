@@ -44,9 +44,6 @@ export default function Welcome() {
             const response = await sdk.actions.addMiniApp();
             
             if (response.notificationDetails) {
-                console.log("MiniApp added with notification details:", response.notificationDetails);
-                console.log("User wallet:", walletAddress);
-                
                 // Save notification details to user
                 const saveResponse = await fetch('/api/miniapp/notifications/save', {
                     method: 'POST',
@@ -54,13 +51,12 @@ export default function Welcome() {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        wallet: session?.wallet,
+                        wallet: walletAddress,
                         notificationDetails: response.notificationDetails
                     })
                 });
 
                 const saveResult = await saveResponse.json();
-                console.log("Save response:", saveResult);
 
                 if (!saveResponse.ok) {
                     throw new Error(saveResult.error || "Failed to save notification details");
@@ -80,7 +76,7 @@ export default function Welcome() {
         } finally {
             setIsAddingMiniApp(false);
         }
-    }, [user?.wallet]);
+    }, [walletAddress]);
 
     
     return (
@@ -94,7 +90,7 @@ export default function Welcome() {
                     <FaPlus/> Create Auction
                 </button>
 
-                {!hasNotifications && session && context && (
+                {!hasNotifications && authenticated && context && (
                     <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
                         <DrawerContent>
                             <DrawerHeader>
