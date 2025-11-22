@@ -9,7 +9,7 @@ import { useNavigateWithLoader } from "@/utils/useNavigateWithLoader"
 import { useRouter, usePathname } from "next/navigation"
 import SearchBar from "./SearchBar"
 import { RiSearchLine, RiInformationLine, RiAddCircleLine, RiTrophyLine, RiQrScanLine, RiUserLine } from "react-icons/ri"
-import { useSession } from "next-auth/react"
+import { usePrivy } from "@privy-io/react-auth"
 import { GoDotFill } from "react-icons/go";
 
 
@@ -45,14 +45,13 @@ export default function Navbar(){
         navigateWithLoader(path)
     }
 
-    const router = useRouter()
-
-    const {data:session} = useSession()
+    const router = useRouter();
+    const { authenticated } = usePrivy();
 
     return (
         <>
             {/* Search Bar Overlay */}
-            {session && <SearchBar isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />}
+            {authenticated && <SearchBar isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />}
 
             {/* Mobile Navbar */}
             <div className="relative z-50 lg:hidden" ref={mobileMenuRef}>

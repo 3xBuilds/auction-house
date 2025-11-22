@@ -1,25 +1,15 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { getToken } from 'next-auth/jwt';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Get the authentication token
-  const token = await getToken({ 
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET 
-  });
-
   console.log("Pathname requested in middleware:", pathname);
-  console.log("Authentication token:", token);
   
-  // If user is not authenticated and not already at root or bid pages, redirect to root
-  if (!token && pathname !== '/' && !pathname.startsWith('/bid/') && !pathname.startsWith('/.well-known')) {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
+  // Note: With Privy, authentication is handled client-side.
+  // Protected routes should check authentication state in the component itself.
+  // Middleware is mainly used for logging or other server-side checks.
   
-  // If authenticated or at root or bid pages, allow the request
   return NextResponse.next();
 }
 

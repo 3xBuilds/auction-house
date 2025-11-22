@@ -30,7 +30,7 @@ import {
   createBaseAccountSDK,
   getCryptoKeyAccount,
 } from "@base-org/account";
-import { useSession } from "next-auth/react";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { fetchTokenPrice, calculateUSDValue, formatUSDAmount } from "@/utils/tokenPrice";
 import Image from "next/image";
 import { checkStatus } from "@/utils/checkStatus";
@@ -125,6 +125,9 @@ const LandingAuctions: React.FC = () => {
 
   const { user } = useGlobalContext();
 
+  const { authenticated } = usePrivy();
+  const { wallets } = useWallets();
+
   const fetchTopAuctions = async (pageNum: number = 1, append: boolean = false) => {
     try {
       if (pageNum === 1) {
@@ -167,8 +170,6 @@ const LandingAuctions: React.FC = () => {
       fetchTopAuctions(page + 1, true);
     }
   }, [page, hasMore, loadingMore]);
-
-  const { data: session } = useSession();
 
   useEffect(() => {
     // Fetch auctions for all users (both authenticated and unauthenticated)
@@ -328,7 +329,7 @@ const LandingAuctions: React.FC = () => {
       const contract = await readContractSetup(auction.tokenAddress, erc20Abi);
       const balanceResult = await contract?.balanceOf(address as `0x${string}`);
 
-      const formattedBalance = parseFloat(ethers.utils.formatUnits(balanceResult, checkUsdc(auction.tokenAddress) ? 6 : 18));
+      const formattedBalance = parseFloat(ethers.formatUnits(balanceResult, checkUsdc(auction.tokenAddress) ? 6 : 18));
       if(formattedBalance < bidAmount){
         toast.error("Insufficient token balance to place bid", { id: toastId });
         setIsLoading(false);
@@ -592,8 +593,8 @@ const LandingAuctions: React.FC = () => {
   };
 
   const handleConfirmBid = () => {
-    //check if address and session exist
-          if (!address || !session) {
+    //check if address and authenticated
+          if (!address || !authenticated) {
             toast.error("Please connect your wallet");
             return;
           }
@@ -1191,7 +1192,7 @@ const LandingAuctions: React.FC = () => {
             </div>
           </DrawerHeader>
           
-          {!session || !address ? (
+          {!authenticated || !address ? (
             <div className="px-4 pb-4">
               <div className="text-center mb-4">
                 <p className="text-caption mb-4">Please connect your wallet to place a bid</p>
