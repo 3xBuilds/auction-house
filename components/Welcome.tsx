@@ -90,7 +90,9 @@ export default function Welcome() {
                     <FaPlus/> Create Auction
                 </button>
 
+
                 {!hasNotifications && authenticated && context && (
+
                     <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
                         <DrawerContent>
                             <DrawerHeader>

@@ -4,6 +4,7 @@ import type { NextRequest } from 'next/server';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
+
   // Note: With Privy, authentication is handled client-side.
   // Protected routes should check authentication state in the component itself.
   // Middleware is mainly used for logging or other server-side checks.

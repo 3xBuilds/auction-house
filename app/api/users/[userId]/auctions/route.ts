@@ -9,23 +9,7 @@ export async function GET(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const authToken = req.headers.get('authorization')?.replace('Bearer ', '');
-    
-    if (!authToken) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
 
-    const verifiedClaims = await getPrivyUser(authToken);
-    
-    if (!verifiedClaims) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
     await connectDB();
 
     const { userId } = await params;
