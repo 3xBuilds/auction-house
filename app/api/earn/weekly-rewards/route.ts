@@ -27,12 +27,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, data: [] });
     }
 
-    // Find user
-    const user = await User.findOne({ wallet: userWallet });
-    if (!user) {
-      return NextResponse.json({ success: true, data: [] });
-    }
-
     // Get all weekly entries for this user, ordered by week (newest first)
     const weeklyRewards = await WeeklyBidderLeaderboard.find({
       user: user._id,
