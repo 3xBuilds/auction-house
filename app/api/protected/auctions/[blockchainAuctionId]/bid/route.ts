@@ -195,7 +195,7 @@ export async function POST(req: NextRequest) {
 
     // Trigger outbid notification asynchronously (fire and forget)
     console.log("📬 Triggering outbid notification...");
-    fetch(`${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/api/notifications/outbid/${blockchainAuctionId}`, {
+    await fetch(`${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/api/notifications/outbid/${blockchainAuctionId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
