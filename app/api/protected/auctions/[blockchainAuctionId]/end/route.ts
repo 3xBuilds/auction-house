@@ -3,7 +3,7 @@ import dbConnect from '@/utils/db';
 import Auction, { IBidder } from '@/utils/schemas/Auction';
 import User from '@/utils/schemas/User';
 import { getPrivyUser } from '@/lib/privy-server';
-import { ethers } from 'ethers';
+import { ethers, formatUnits } from 'ethers';
 import { fetchTokenPrice, calculateUSDValue } from '@/utils/tokenPrice';
 
 export async function POST(req: NextRequest) {
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     console.log('Authenticated user:', verifiedClaims.userId);
 
     // Find the user to verify ownership
-    const user = await User.findOne({ wallet: walletAddress });
+    const user = await User.findOne({ privyId: verifiedClaims.userId });
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
@@ -103,9 +103,9 @@ export async function POST(req: NextRequest) {
         }
 
         console.log("BIG NUMBER",contractBidder.bidAmount)
-        console.log("NORMAL",ethers.utils.formatUnits(contractBidder.bidAmount, decimals))
+        console.log("NORMAL",formatUnits(contractBidder.bidAmount, decimals))
 
-        const formattedBidAmount = Number(ethers.utils.formatUnits(contractBidder.bidAmount, decimals));
+        const formattedBidAmount = Number(formatUnits(contractBidder.bidAmount, decimals));
         
         // Calculate USD value
         let usdValue = null;

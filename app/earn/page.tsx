@@ -131,7 +131,7 @@ export default function EarnPage() {
   const claimedRewards = weeklyRewards.filter(r => r.claimed);
   const currentWeekRewards = weeklyRewards.filter(r => !isWeekEnded(r.weekEndDate));
 
-  if (status === 'unauthenticated') {
+  if (!authenticated && ready) {
     return (
       <PageLayout className="min-h-screen flex flex-col items-start justify-start">
         <div className="w-full max-w-6xl max-lg:mx-auto mt-8">

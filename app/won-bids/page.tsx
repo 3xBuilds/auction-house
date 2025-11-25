@@ -88,7 +88,7 @@ export default function WonBidsPage() {
     }
   }, [user?.wallet, authenticated]);
 
-  if (status === "loading") {
+  if (!ready) {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="flex flex-col gap-2">
