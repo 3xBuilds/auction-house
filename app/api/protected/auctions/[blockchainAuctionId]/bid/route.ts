@@ -193,6 +193,17 @@ export async function POST(req: NextRequest) {
       console.log("ℹ️ Bid not eligible for weekly leaderboard (< $10 or bidding on own auction)");
     }
 
+    // Trigger outbid notification asynchronously (fire and forget)
+    console.log("📬 Triggering outbid notification...");
+    fetch(`${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/api/notifications/outbid/${blockchainAuctionId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }).then((res)=>{
+      console.log('✅ Outbid notification triggered, response status:', res.status);
+    }).catch(error => console.error('⚠️ Error sending outbid notification:', error));
+
     const responseData = {
       success: true,
       message: 'Bid placed successfully',
