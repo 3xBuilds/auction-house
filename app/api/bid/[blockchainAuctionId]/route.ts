@@ -280,6 +280,14 @@ export async function POST(
       enhancedHostedBy.username = auction.hostedBy.username || (wallet ? `${wallet.slice(0, 6)}...${wallet.slice(-4)}` : wallet);
     }
 
+    // Trigger outbid notification asynchronously (fire and forget)
+    fetch(`${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/api/notifications/outbid/${blockchainAuctionId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }).catch(error => console.error('Error sending outbid notification:', error));
+
     // Prepare response with auction info and processed bidders
     const response = {
       auctionName: auction.auctionName,
