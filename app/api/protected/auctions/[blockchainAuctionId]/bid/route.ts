@@ -3,7 +3,7 @@ import dbConnect from '@/utils/db';
 import Auction, { IBidder } from '@/utils/schemas/Auction';
 import User from '@/utils/schemas/User';
 import WeeklyBidderLeaderboard from '@/utils/schemas/WeeklyBidderLeaderboard';
-import { getPrivyUser } from '@/lib/privy-server';
+import { getServerSession } from 'next-auth';
 import { fetchTokenPrice } from '@/utils/tokenPrice';
 import { getWeekBoundaries } from '@/utils/weekHelpers';
 
@@ -11,21 +11,14 @@ export async function POST(req: NextRequest) {
   console.log("=== BID API ROUTE STARTED ===");
   
   try {
+    // Check for authentication
     console.log("Checking authentication...");
-    const authToken = req.headers.get('authorization')?.replace('Bearer ', '');
-    
-    if (!authToken) {
-      console.log("❌ Authentication failed - no token");
+    const session = await getServerSession();
+    if (!session) {
+      console.log("❌ Authentication failed - no session");
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const verifiedClaims = await getPrivyUser(authToken);
-    
-    if (!verifiedClaims) {
-      console.log("❌ Authentication failed - invalid token");
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.log("✅ Authentication successful:", verifiedClaims.userId);
+    console.log("✅ Authentication successful:", session.user?.email || 'Unknown user');
 
     const blockchainAuctionId = req.nextUrl.pathname.split('/')[4];
     console.log("📋 Extracted blockchainAuctionId from URL:", blockchainAuctionId);
@@ -199,6 +192,17 @@ export async function POST(req: NextRequest) {
     } else {
       console.log("ℹ️ Bid not eligible for weekly leaderboard (< $10 or bidding on own auction)");
     }
+
+    // Trigger outbid notification asynchronously (fire and forget)
+    console.log("📬 Triggering outbid notification...");
+    await fetch(`${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/api/notifications/outbid/${blockchainAuctionId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }).then((res)=>{
+      console.log('✅ Outbid notification triggered, response status:', res.status);
+    }).catch(error => console.error('⚠️ Error sending outbid notification:', error));
 
     const responseData = {
       success: true,
