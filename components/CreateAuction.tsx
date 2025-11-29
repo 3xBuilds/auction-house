@@ -14,7 +14,7 @@ import { readContractSetup, writeContractSetup } from "@/utils/contractSetup";
 import { useSession } from "next-auth/react";
 import { useNavigateWithLoader } from "@/utils/useNavigateWithLoader";
 import { randomUUID } from "crypto";
-import { WalletConnect } from "./Web3/walletConnect";
+// import { WalletConnect } from "./Web3/walletConnect";
 import { useMiniKit } from "@coinbase/onchainkit/minikit";
 import { encodeFunctionData, numberToHex } from "viem";
 import {
@@ -30,6 +30,7 @@ import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { checkStatus } from "@/utils/checkStatus";
 import { useGlobalContext } from "@/utils/providers/globalContext";
 import TwitterAuthModal from "./UI/TwitterAuthModal";
+import LoginWithOAuth from "./utils/twitterConnect";
 
 
 interface CurrencyOption {
@@ -471,7 +472,7 @@ setIsLoading(false);
                 Once connected, you'll be able to set up auctions with custom tokens, durations, and minimum bids.
               </p>
             </div>
-            <WalletConnect />
+            <LoginWithOAuth />
           </div>
         </div>
       </div>

@@ -36,10 +36,11 @@ import { useSession } from "next-auth/react";
 import { checkStatus } from "@/utils/checkStatus";
 import { ethers } from "ethers";
 import { checkUsdc } from "@/utils/checkUsdc";
-import { WalletConnect } from "@/components/Web3/walletConnect";
+// import { WalletConnect } from "@/components/Web3/walletConnect";
 import sdk from '@farcaster/miniapp-sdk';
 import { FaShare } from 'react-icons/fa';
 import { useNavigateWithLoader } from '@/utils/useNavigateWithLoader';
+import LoginWithOAuth from './utils/twitterConnect';
 
 interface Bidder {
   displayName: string;
@@ -1011,7 +1012,7 @@ export default function BidPage() {
               <div className="px-4 pb-4">
                 <div className="text-center mb-4">
                   <p className="text-caption mb-4">You must be logged in</p>
-                  <WalletConnect />
+                  <LoginWithOAuth />
                 </div>
               </div>
             ) : (
