@@ -4,15 +4,45 @@ import { MdWallet, MdLogout, MdClose } from 'react-icons/md';
 import { useState } from 'react';
 
 export default function LoginWithOAuth() {
-  const { user, authenticated, connectWallet, linkWallet, logout, unlinkWallet } = usePrivy();
+  const { user, authenticated, connectWallet, linkWallet, logout, unlinkWallet, getAccessToken } = usePrivy();
   const { wallets } = useWallets();
   const [showDisconnectMenu, setShowDisconnectMenu] = useState(false);
   
   const { login } = useLogin({
-    onComplete: ({ user, isNewUser, wasAlreadyAuthenticated, loginMethod, loginAccount }) => {
+    onComplete: async ({ user, isNewUser, wasAlreadyAuthenticated, loginMethod, loginAccount }) => {
       console.log('User logged in successfully', user);
       if (isNewUser) {
         console.log('New user created');
+      }
+      
+      // Save Twitter profile to database if Twitter was linked
+      if (user?.twitter && user?.wallet) {
+        try {
+          const accessToken = await getAccessToken();
+          const response = await fetch('/api/protected/user/save-twitter-profile', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+              twitterProfile: {
+                id: user.twitter.subject,
+                username: user.twitter.username,
+                name: user.twitter.name,
+                profileImageUrl: user.twitter.profilePictureUrl,
+              },
+            }),
+          });
+
+          if (!response.ok) {
+            console.error('Failed to save Twitter profile');
+          } else {
+            console.log('Twitter profile saved successfully');
+          }
+        } catch (error) {
+          console.error('Error saving Twitter profile:', error);
+        }
       }
     },
     onError: (error) => {
@@ -49,8 +79,9 @@ export default function LoginWithOAuth() {
 
   const handleUnlinkWallet = async () => {
     try {
-      if (wallets[0]) {
-        await unlinkWallet(wallets[0].address);
+      const connectedWallet = wallets.length > 0 ? wallets[0] : (user?.wallet ? { address: user.wallet.address } : null);
+      if (connectedWallet) {
+        await unlinkWallet(connectedWallet.address);
       }
     } catch (err) {
       console.error('Unlink wallet failed', err);
@@ -59,8 +90,8 @@ export default function LoginWithOAuth() {
 
   // Check if user is authenticated and has Twitter profile
   const twitterAccount = user?.twitter;
-  const walletAccount = user?.wallet;
-  const hasWallet = wallets.length > 0 || walletAccount;
+  const connectedWallet = wallets.length > 0 ? wallets[0] : (user?.wallet ? { address: user.wallet.address } : null);
+  const hasWallet = !!connectedWallet;
 
   return (
       <div className="flex flex-col gap-3 relative">
@@ -105,18 +136,13 @@ export default function LoginWithOAuth() {
                 )}
                 
                 {/* Wallet Connection Section */}
-                {hasWallet ? (
+                {hasWallet && connectedWallet ? (
                   <div className="flex items-center justify-between gap-2 bg-green-500/10 px-3 py-2 rounded-full border border-green-500/20">
                     <div className="flex items-center gap-2">
                       <MdWallet className="text-green-500 text-xl" />
                       <span className="text-sm font-medium text-green-500">
-                        Wallet Connected
+                        {connectedWallet.address.slice(0, 6)}...{connectedWallet.address.slice(-4)}
                       </span>
-                      {wallets[0] && (
-                        <span className="text-xs text-gray-400">
-                          {wallets[0].address.slice(0, 6)}...{wallets[0].address.slice(-4)}
-                        </span>
-                      )}
                     </div>
                     <button
                       onClick={handleUnlinkWallet}
