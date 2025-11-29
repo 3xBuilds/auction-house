@@ -31,6 +31,7 @@ import { checkStatus } from "@/utils/checkStatus";
 import { useGlobalContext } from "@/utils/providers/globalContext";
 import TwitterAuthModal from "./UI/TwitterAuthModal";
 import LoginWithOAuth from "./utils/twitterConnect";
+import { usePrivy } from '@privy-io/react-auth';
 
 
 interface CurrencyOption {
@@ -45,6 +46,7 @@ export default function CreateAuction() {
 
   const { address, isConnected } = useAccount();
   const { isDesktopWallet, hasTwitterProfile } = useGlobalContext();
+  const { getAccessToken } = usePrivy();
   const [auctionTitle, setAuctionTitle] = useState("");
   const [description, setDescription] = useState("");
   // const [currencyMode, setCurrencyMode] = useState<CurrencySelectionMode>('search')
@@ -111,10 +113,12 @@ export default function CreateAuction() {
       toast.loading("Saving auction details...");
 
       const now = new Date();
+      const accessToken = await getAccessToken();
       const response = await fetch("/api/protected/auctions/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           auctionName: auctionTitle,

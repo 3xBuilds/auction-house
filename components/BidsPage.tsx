@@ -41,6 +41,7 @@ import sdk from '@farcaster/miniapp-sdk';
 import { FaShare } from 'react-icons/fa';
 import { useNavigateWithLoader } from '@/utils/useNavigateWithLoader';
 import LoginWithOAuth from './utils/twitterConnect';
+import { usePrivy } from '@privy-io/react-auth';
 
 interface Bidder {
   displayName: string;
@@ -122,6 +123,7 @@ export default function BidPage() {
   const { user } = useGlobalContext();
   const {address} = useAccount()
   const { data: session } = useSession();
+  const { getAccessToken } = usePrivy();
 
 
   // Debounced token price fetching
@@ -368,10 +370,12 @@ export default function BidPage() {
       console.log("Starting processSuccess with:", { auctionId, bidAmount, address });
       
       // Call the API to save bid details in the database
+      const accessToken = await getAccessToken();
       const response = await fetch(`/api/protected/auctions/${auctionId}/bid`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           bidAmount: bidAmount,
@@ -528,7 +532,7 @@ export default function BidPage() {
 
       console.log("User balance:", balanceResult ? balanceResult.toString() : "N/A");
 
-      const formattedBalance = parseFloat(ethers.utils.formatUnits(balanceResult, checkUsdc(auction.tokenAddress) ? 6 : 18));
+      const formattedBalance = parseFloat(ethers.formatUnits(balanceResult, checkUsdc(auction.tokenAddress) ? 6 : 18));
       if(formattedBalance < bidAmount){
         toast.error("Insufficient token balance to place bid", { id: toastId });
         setIsLoading(false);
