@@ -62,7 +62,7 @@ export function getAuctionReminderQueue() {
 }
 
 // Helper to schedule reminder jobs for an auction
-const MIN_AUCTION_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+const MIN_AUCTION_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
 export async function scheduleAuctionReminders(
   auctionId: string,
