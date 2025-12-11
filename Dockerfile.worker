@@ -14,11 +14,14 @@ RUN npm ci
 COPY packages/queue ./packages/queue
 COPY apps/worker ./apps/worker
 
-# Build
-RUN npm run build --workspace=@repo/queue
-RUN npm run build --workspace=worker
+# Build queue package first
+WORKDIR /app/packages/queue
+RUN npx tsc
 
+# Build worker
 WORKDIR /app/apps/worker
+RUN npx tsc
 
+# Run
 CMD ["node", "dist/index.js"]
 

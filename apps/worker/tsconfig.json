@@ -1,17 +1,13 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    "module": "CommonJS",
+    "moduleResolution": "node",
     "esModuleInterop": true,
     "strict": true,
     "skipLibCheck": true,
     "outDir": "dist",
-    "declaration": true,
-    "baseUrl": ".",
-    "paths": {
-      "@repo/queue": ["../../packages/queue/src"]
-    }
+    "declaration": true
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]
