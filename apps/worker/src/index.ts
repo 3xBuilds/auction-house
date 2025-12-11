@@ -1,7 +1,13 @@
 import 'dotenv/config';
 import { Worker } from 'bullmq';
 import mongoose from 'mongoose';
-import { QUEUES, redisConnection, sendNotification, type AuctionReminderJobData } from '@repo/queue';
+import {
+  QUEUES,
+  redisConnection,
+  sendNotification,
+  type AuctionReminderJobData,
+  type AuctionLifecycleJobData,
+} from '@repo/queue';
 
 // ============ MongoDB Setup ============
 const MONGO_URI = process.env.MONGO_URI || '';
@@ -44,8 +50,8 @@ const auctionReminderWorker = new Worker<AuctionReminderJobData>(
 
     const body =
       reminderType === 'halfway'
-        ? `"${auctionName}" is 50% complete. Place your bid!`
-        : `"${auctionName}" is almost over. Last chance to bid!`;
+        ? `${auctionName} is 50% complete. Place your bid!`
+        : `${auctionName} is almost over. Last chance to bid!`;
 
     const targetUrl = `${process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'}/bid/${blockchainAuctionId}`;
 
@@ -83,5 +89,35 @@ auctionReminderWorker.on('failed', (job, err) => {
   console.error(`❌ Job ${job?.id} failed:`, err.message);
 });
 
-console.log('✅ Worker started and listening for jobs');
+// ============ Auction Lifecycle Worker ============
+const auctionLifecycleWorker = new Worker<AuctionLifecycleJobData>(
+  QUEUES.AUCTION_LIFECYCLE,
+  async (job) => {
+    const { blockchainAuctionId, auctionName, event } = job.data;
+    console.log(`🔔 Processing lifecycle event "${event}" for auction: ${blockchainAuctionId}`);
+
+    await connectDB();
+
+    if (event === 'ended') {
+      // TODO: Implement auction end logic
+      console.log(`📌 TODO: Handle auction ended for "${auctionName}"`);
+    }
+
+    return { event, processed: true };
+  },
+  {
+    connection: redisConnection,
+    concurrency: 5,
+  }
+);
+
+auctionLifecycleWorker.on('completed', (job, result) => {
+  console.log(`✅ Lifecycle job ${job.id} completed:`, result);
+});
+
+auctionLifecycleWorker.on('failed', (job, err) => {
+  console.error(`❌ Lifecycle job ${job?.id} failed:`, err.message);
+});
+
+console.log('✅ Workers started and listening for jobs');
 
