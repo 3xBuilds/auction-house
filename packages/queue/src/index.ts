@@ -52,7 +52,7 @@ export interface AuctionReminderJobData {
 
 export interface AuctionLifecycleJobData {
   auctionId: string;
-  blockchainAuctionId: number;
+  blockchainAuctionId: string;
   auctionName: string;
   event: 'ended'; // Add more events as needed
 }
@@ -143,7 +143,7 @@ export async function scheduleAuctionReminders(
 // Schedule auction lifecycle event at end time
 export async function scheduleAuctionEnd(
   auctionId: string,
-  blockchainAuctionId: number,
+  blockchainAuctionId: string,
   auctionName: string,
   endTime: Date
 ) {

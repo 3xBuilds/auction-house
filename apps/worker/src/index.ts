@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { Worker } from 'bullmq';
+import { autoEnd } from "../handlers/autoEnd";
 import mongoose from 'mongoose';
 import {
   QUEUES,
@@ -99,7 +100,7 @@ const auctionLifecycleWorker = new Worker<AuctionLifecycleJobData>(
     await connectDB();
 
     if (event === 'ended') {
-      // TODO: Implement auction end logic
+      await autoEnd(blockchainAuctionId);
       console.log(`📌 TODO: Handle auction ended for "${auctionName}"`);
     }
 
