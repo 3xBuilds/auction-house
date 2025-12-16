@@ -4,6 +4,7 @@ WORKDIR /app
 
 # Copy all package files
 COPY package.json package-lock.json ./
+COPY scripts ./scripts
 COPY apps/worker/package.json ./apps/worker/
 COPY packages/queue/package.json ./packages/queue/
 COPY packages/contracts/package.json ./packages/contracts/
