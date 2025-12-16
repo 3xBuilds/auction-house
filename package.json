@@ -11,7 +11,7 @@
     "dev:web": "turbo dev --filter=web",
     "dev:worker": "turbo dev --filter=worker",
     "contracts:build": "npm run build --prefix packages/contracts",
-    "postinstall": "npm run contracts:build"
+    "postinstall": "node scripts/postinstall-contracts.js"
   },
   "devDependencies": {
     "turbo": "^2.3.0",
