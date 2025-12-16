@@ -5,8 +5,9 @@ const { spawnSync } = require("child_process");
 const repoRoot = join(__dirname, "..");
 const contractsDir = join(repoRoot, "packages", "contracts");
 const contractsPkg = join(contractsDir, "package.json");
+const contractsTsconfig = join(contractsDir, "tsconfig.json");
 
-if (!existsSync(contractsPkg)) {
+if (!existsSync(contractsPkg) || !existsSync(contractsTsconfig)) {
   console.log("[@repo/contracts] package not found, skipping build");
   process.exit(0);
 }
