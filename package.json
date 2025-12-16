@@ -10,7 +10,7 @@
     "build": "turbo build",
     "dev:web": "turbo dev --filter=web",
     "dev:worker": "turbo dev --filter=worker",
-    "contracts:build": "npm run build -w @repo/contracts",
+    "contracts:build": "npm run build --prefix packages/contracts",
     "postinstall": "npm run contracts:build"
   },
   "devDependencies": {
