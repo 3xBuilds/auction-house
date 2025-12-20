@@ -78,6 +78,13 @@ export default function LoginWithOAuth() {
   const { login } = useLogin({
     onComplete: async ({ user, isNewUser, wasAlreadyAuthenticated, loginMethod, loginAccount }) => {
       console.log('User logged in successfully', user);
+      
+      // Check if iframe_redirect query parameter is present
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('iframe_redirect')) {
+        window.location.href = 'https://wl.houseproto.fun/whitelist/house-protocol/portal';
+        return;
+      }
       if (isNewUser && user.twitter?.subject) {
         console.log('New user detected, creating user in database');
         try {
@@ -149,6 +156,13 @@ export default function LoginWithOAuth() {
   });
 
   const handleTwitterLogin = () => {
+    // Check if running in an iframe
+    if (window.self !== window.top) {
+      // Redirect to the main site with iframe_redirect parameter
+      window.top!.location.href = 'https://houseproto.fun?type=iframe_redirect';
+      return;
+    }
+    
     // Opens Privy's login modal with Twitter as the login method
     login({ loginMethods: ['twitter']});
   };
