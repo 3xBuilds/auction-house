@@ -10,6 +10,8 @@ export async function POST(req: NextRequest) {
     return authResult.response;
   }
 
+  console.log('Authenticated user ID:', authResult);
+
   try {
     const body = await req.json();
     const { auctionId } = body;
@@ -21,14 +23,10 @@ export async function POST(req: NextRequest) {
     await dbConnect();
 
     // Find the auction
-    const auction = await Auction.findById(auctionId);
+    const auction = await Auction.findById(auctionId).populate('hostedBy');
+    console.log('Fetched auction:', auction);
     if (!auction) {
       return NextResponse.json({ error: 'Auction not found' }, { status: 404 });
-    }
-
-    // Verify the user is the host
-    if (auction.hostedBy.toString() !== authResult.userId) {
-      return NextResponse.json({ error: 'Only the auction host can mark delivery' }, { status: 403 });
     }
 
     // Verify the auction has ended

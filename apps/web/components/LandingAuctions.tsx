@@ -14,6 +14,7 @@ import {
   DrawerTrigger,
 } from "./UI/Drawer";
 import { useNavigateWithLoader } from "@/utils/useNavigateWithLoader";
+import RatingCircle from "./UI/RatingCircle";
 import toast from "react-hot-toast";
 import { useAccount, useSendCalls, useReadContract } from "wagmi";
 import { useMiniKit } from "@coinbase/onchainkit/minikit";
@@ -62,6 +63,8 @@ interface HostInfo {
   display_name?: string;
   socialId?: string;
   pfp_url?: string;
+  averageRating?: number;
+  totalReviews?: number;
 }
 
 interface Auction {
@@ -1314,6 +1317,14 @@ const LandingAuctions: React.FC = () => {
                             ? `@${auction.hostedBy.username}`
                             : truncateAddress(auction.hostedBy.wallet))}
                       </span>
+                      {auction.hostedBy.averageRating && auction.hostedBy.averageRating > 0 && (
+                        <RatingCircle
+                          rating={auction.hostedBy.averageRating}
+                          totalReviews={auction.hostedBy.totalReviews || 0}
+                          size="sm"
+                          showLabel={false}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>

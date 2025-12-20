@@ -48,11 +48,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Cannot review - no winner for this auction' }, { status: 400 });
     }
 
-    // Verify the user is the winner
-    if (auction.winningBid.toString() !== authResult.userId) {
-      return NextResponse.json({ error: 'Only the auction winner can leave a review' }, { status: 403 });
-    }
-
     // Verify the host has marked as delivered
     if (!auction.deliveredByHost) {
       return NextResponse.json({ error: 'Host must mark the auction as delivered before you can review' }, { status: 400 });
@@ -67,7 +62,7 @@ export async function POST(req: NextRequest) {
     // Create the review
     const review = new Review({
       auction: auctionId,
-      reviewer: authResult.userId,
+      reviewer: auction.winningBid,
       reviewee: auction.hostedBy,
       rating,
       comment: comment || undefined,

@@ -213,7 +213,11 @@ export async function GET(req: NextRequest) {
 
       return {
         ...auction,
-        hostedBy: enhancedHostedBy,
+        hostedBy: {
+          ...enhancedHostedBy,
+          averageRating: auction.hostedBy?.averageRating || 0,
+          totalReviews: auction.hostedBy?.totalReviews || 0
+        },
         highestBid,
         topBidder,
         participantCount,

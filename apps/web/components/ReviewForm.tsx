@@ -5,6 +5,8 @@ import RatingStars from '@/components/UI/RatingStars';
 import Input from '@/components/UI/Input';
 import { Button } from '@/components/UI/button';
 import toast from 'react-hot-toast';
+import Heading from './UI/Heading';
+import { getAccessToken } from '@privy-io/react-auth';
 
 interface ReviewFormProps {
   auctionId: string;
@@ -38,11 +40,14 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
 
     setIsSubmitting(true);
 
+    const token = await getAccessToken()
+
     try {
       const response = await fetch('/api/protected/reviews/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           auctionId,
@@ -70,8 +75,8 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-6 bg-black/40 backdrop-blur-md border border-white/20 rounded-xl">
-      <h2 className="text-2xl font-bold text-white mb-2">Leave a Review</h2>
+    <div className="w-full max-w-2xl mx-auto p-6 bg-black/40 backdrop-blur-md border border-primary/20 rounded-xl">
+      <Heading className="text-2xl font-bold mb-2">Leave a Review</Heading>
       <p className="text-gray-400 mb-6">
         Rate your experience with the auction: <span className="text-white font-semibold">{auctionName}</span>
       </p>

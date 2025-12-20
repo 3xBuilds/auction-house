@@ -4,6 +4,7 @@ import { useGlobalContext } from '@/utils/providers/globalContext'
 import { getAccessToken, usePrivy, useWallets } from '@privy-io/react-auth'
 import Image from 'next/image'
 import Heading from '@/components/UI/Heading'
+import RatingCircle from '@/components/UI/RatingCircle'
 import { MdWallet } from 'react-icons/md'
 import { RiUserLine, RiAuctionLine, RiMedalLine, RiCalendarLine, RiTwitterLine, RiLoader5Fill } from 'react-icons/ri'
 import { useNavigateWithLoader } from '@/utils/useNavigateWithLoader'
@@ -20,6 +21,8 @@ interface UserProfile {
   fid?: string
   pfp_url: string
   display_name: string
+  averageRating?: number
+  totalReviews?: number
   twitterProfile?: {
     id: string
     username: string
@@ -141,9 +144,22 @@ export default function ProfilePage() {
             )}
             
             <div className="flex-1 max-lg:text-center">
-              <Heading size="md" gradient={false} className="text-white mb-2">
-                {profileData?.twitterProfile?.username || user.username  || 'Anonymous User'}
-              </Heading>
+              <div className="flex items-center gap-3 max-lg:justify-center mb-2">
+                <Heading size="md" gradient={false} className="text-white">
+                  {profileData?.twitterProfile?.username || user.username  || 'Anonymous User'}
+                </Heading>
+                {profileData?.averageRating && profileData.averageRating > 0 && (
+                  <div className='relative'>
+                  <RatingCircle
+                    rating={profileData.averageRating}
+                    totalReviews={profileData.totalReviews || 0}
+                    size="sm"
+                    showLabel={false}
+                  />
+                  <div className='absolute text-sm font-bold top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'>{profileData.averageRating}</div>
+                  </div>
+                )}
+              </div>
               <p className="text-caption text-sm lg:text-base mb-4 text-caption font-bold">
                 Wallets: {profileData?.wallets.length ? <div className='flex flex-wrap gap-1 max-lg:justify-center mt-1'>
                   {profileData.wallets.map((wallet, index) => (

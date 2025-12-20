@@ -4,11 +4,10 @@ import Review from '@/utils/schemas/Review';
 import User from '@/utils/schemas/User';
 
 export async function GET(
-  req: NextRequest,
-  { params }: { params: { userId: string } }
+  req: NextRequest
 ) {
   try {
-    const { userId } = params;
+    const userId = req.nextUrl.pathname.split('/').pop();
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
@@ -17,14 +16,14 @@ export async function GET(
     await dbConnect();
 
     // Get user to fetch their rating stats
-    const user = await User.findById(userId).select('averageRating totalReviews username twitterProfile');
+    const user = await User.findOne({socialId: userId}).select('averageRating totalReviews username twitterProfile');
     
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Get all reviews for this user (as reviewee/host)
-    const reviews = await Review.find({ reviewee: userId })
+    const reviews = await Review.find({ reviewee: user._id })
       .populate('reviewer', 'username twitterProfile wallets')
       .populate('auction', 'auctionName endDate blockchainAuctionId')
       .sort({ createdAt: -1 }); // Most recent first
