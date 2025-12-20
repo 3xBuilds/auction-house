@@ -49,6 +49,14 @@ export default function LoginWithOAuth() {
     };
   }, [menuOpen]);
 
+  // Auto-trigger login if iframe_redirect query parameter is present
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('iframe_redirect') && !authenticated) {
+      handleTwitterLogin();
+    }
+  }, [authenticated]);
+
   const handleAddWallet = async (walletAddress: string) => {
     try {
       const accessToken = await getAccessToken();
