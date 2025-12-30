@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/utils/db';
 import User from '@/utils/schemas/User';
 import Auction from '@/utils/schemas/Auction';
+import { getFidsWithCache } from '@/utils/fidCache';
 
 export async function GET(
   req: NextRequest,
@@ -21,7 +22,7 @@ export async function GET(
 
     // Find user and their auctions
     const userDoc = await User.findOne({socialId: userId})
-      .select('wallet fid username hostedAuctions twitterProfile socialId socialPlatform averageRating totalReviews');
+      .select('wallets fid username hostedAuctions twitterProfile socialId socialPlatform averageRating totalReviews');
 
     if (!userDoc) {
       return NextResponse.json(
@@ -34,7 +35,26 @@ export async function GET(
 
     const user: any = userDoc;
 
-    // Fetch user details from Neynar if FID is a valid number
+    // Fetch user details from Neynar and auctions in parallel
+    const shouldFetchNeynar = user.socialId && user.socialPlatform !== "TWITTER";
+
+    const [neynarData, auctions] = await Promise.all([
+      // Fetch Neynar data if needed
+      (async () => {
+        if (shouldFetchNeynar) {
+          const neynarUsersMap = await getFidsWithCache([user.socialId]);
+          return neynarUsersMap[user.socialId] || null;
+        }
+        return null;
+      })(),
+      // Get all auctions hosted by this user
+      Auction.find({ hostedBy: user._id })
+        .select('auctionName endDate startDate currency blockchainAuctionId minimumBid bidders')
+        .sort({ createdAt: -1 })
+        .lean()
+    ]);
+
+    // Process user profile
     let userProfile = {
       username: (user.username as string) || null,
       pfp_url: null as string | null,
@@ -43,68 +63,40 @@ export async function GET(
       x_username: null as string | null
     };
 
-    if (user.socialId && user.socialPlatform !== "TWITTER") {
-      // FID is a valid number, fetch from Neynar
-      try {
-        const neynarResponse = await fetch(
-          `https://api.neynar.com/v2/farcaster/user/bulk?fids=${user.socialId}`,
-          {
-            headers: {
-              'x-api-key': process.env.NEYNAR_API_KEY || '',
-            },
-          }
+    if (neynarData) {
+      userProfile.username = neynarData.username || user.username;
+      userProfile.pfp_url = neynarData.pfp_url || null;
+      userProfile.display_name = neynarData.display_name || null;
+      userProfile.bio = neynarData.profile?.bio?.text || null;
+      
+      // Extract X username from verified_accounts using correct Neynar API structure
+      if (neynarData.verified_accounts && Array.isArray(neynarData.verified_accounts)) {
+        const xAccount = neynarData.verified_accounts.find((account: any) => 
+          account.platform === 'x'
         );
-
-        if (neynarResponse.ok) {
-          const neynarData = await neynarResponse.json();
-          
-          if (neynarData.users && neynarData.users.length > 0) {
-            const neynarUser = neynarData.users[0];
-            userProfile.username = neynarUser.username || user.username;
-            userProfile.pfp_url = neynarUser.pfp_url || null;
-            userProfile.display_name = neynarUser.display_name || null;
-            userProfile.bio = neynarUser.profile?.bio?.text || null;
-            
-            // Extract X username from verified_accounts using correct Neynar API structure
-            if (neynarUser.verified_accounts && Array.isArray(neynarUser.verified_accounts)) {
-              const xAccount = neynarUser.verified_accounts.find((account: any) => 
-                account.platform === 'x'
-              );
-              if (xAccount && xAccount.username) {
-                userProfile.x_username = xAccount.username;
-                console.log('Found X username from verified_accounts:', xAccount.username);
-              }
-            }
-            
-            console.log('Final user profile with X username:', userProfile.x_username);
-          }
+        if (xAccount && xAccount.username) {
+          userProfile.x_username = xAccount.username;
+          console.log('Found X username from verified_accounts:', xAccount.username);
         }
-      } catch (neynarError) {
-        console.error('Error fetching Neynar data:', neynarError);
-        // Continue with existing user data
       }
+      
+      console.log('Final user profile with X username:', userProfile.x_username);
     } else {
       // FID starts with "none" or doesn't exist, use wallet-based defaults
-      userProfile.username = user.username ? user.username : `${user.wallet.slice(0, 6)}...${user.wallet.slice(-4)}`;
-      userProfile.pfp_url = `https://api.dicebear.com/5.x/identicon/svg?seed=${user.wallet.toLowerCase()}`;
+      userProfile.username = user.twitterProfile.username ? user.twitterProfile.username : `${user.wallets[0].slice(0, 6)}...${user.wallets[0].slice(-4)}`;
+      userProfile.pfp_url = user.twitterProfile.profileImageUrl ? user.twitterProfile.profileImageUrl : `https://api.dicebear.com/5.x/identicon/svg?seed=${user.wallets[0].toLowerCase()}`;
       
       // Check for Twitter profile in database
-      if (user.twitterProfile && user.twitterProfile.username) {
-        userProfile.x_username = user.twitterProfile.username;
-        if (user.twitterProfile.profileImageUrl) {
-          userProfile.pfp_url = user.twitterProfile.profileImageUrl;
-        }
-        if (user.twitterProfile.name) {
-          userProfile.display_name = user.twitterProfile.name;
-        }
-      }
+      // if (user.twitterProfile && user.twitterProfile.username) {
+      //   userProfile.x_username = user.twitterProfile.username;
+      //   if (user.twitterProfile.profileImageUrl) {
+      //     userProfile.pfp_url = user.twitterProfile.profileImageUrl;
+      //   }
+      //   if (user.twitterProfile.name) {
+      //     userProfile.display_name = user.twitterProfile.name;
+      //   }
+      // }
     }
-
-    // Get all auctions hosted by this user
-    const auctions = await Auction.find({ hostedBy: user._id })
-      .select('auctionName endDate startDate currency blockchainAuctionId minimumBid bidders')
-      .sort({ createdAt: -1 })
-      .lean();
 
     // Separate active and ended auctions
     const now = new Date();
@@ -114,9 +106,16 @@ export async function GET(
     // Calculate highest bid for each auction
     const processAuctions = (auctionList: any[]) => {
       return auctionList.map(auction => {
+        console.log('Processing auction:', auction.auctionName, 'minimumBid:', auction.minimumBid, 'bidders:', auction.bidders);
+        
         const highestBid = auction.bidders && auction.bidders.length > 0
-          ? Math.max(...auction.bidders.map((b: any) => b.bidAmount))
+          ? Math.max(...auction.bidders.map((b: any) => {
+              console.log('Bidder bid amount:', b.bidAmount, 'type:', typeof b.bidAmount);
+              return Number(b.bidAmount) || 0;
+            }))
           : 0;
+
+        console.log('Calculated highest bid:', highestBid);
 
         return {
           _id: auction._id,
@@ -125,7 +124,7 @@ export async function GET(
           startDate: auction.startDate,
           currency: auction.currency,
           blockchainAuctionId: auction.blockchainAuctionId,
-          minimumBid: auction.minimumBid,
+          minimumBid: Number(auction.minimumBid) || 0,
           highestBid,
           biddersCount: auction.bidders?.length || 0
         };
@@ -135,7 +134,7 @@ export async function GET(
     return NextResponse.json({
       user: {
         _id: user._id,
-        wallet: user.wallet,
+        wallet: user.wallets[0],
         fid: user.socialId,
         username: userProfile.username,
         pfp_url: userProfile.pfp_url,
@@ -143,7 +142,9 @@ export async function GET(
         bio: userProfile.bio,
         x_username: userProfile.x_username,
         averageRating: user.averageRating || 0,
-        totalReviews: user.totalReviews || 0
+        totalReviews: user.totalReviews || 0,
+        twitterProfile: user.twitterProfile || null,
+        platform: user.socialPlatform || null
       },
       activeAuctions: processAuctions(activeAuctions),
       endedAuctions: processAuctions(endedAuctions)

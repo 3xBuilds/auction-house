@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/utils/db';
 import Auction from '@/utils/schemas/Auction';
+import User from '@/utils/schemas/User';
+import { getFidsWithCache } from '@/utils/fidCache';
+import { getRedisClient } from '@/utils/redisCache';
 
 export async function GET(req: NextRequest) {
   try {
     await dbConnect();
+    
+    // Ensure User model is registered
+    User;
 
     const currentDate = new Date();
     const { searchParams } = new URL(req.url);
@@ -23,26 +29,28 @@ export async function GET(req: NextRequest) {
 
     // Find auctions that are currently running (started but not ended)
     // Sort by endDate ascending (soonest ending first) and implement pagination
-    const runningAuctions = await Auction.find({
-      status: 'ongoing',
-      enabled: true,
-      startDate: { $lte: currentDate },
-      endDate: { $gte: currentDate },
-      ...currencyQuery
-    })
-    .populate('hostedBy') // Populate full host information
-    .populate('bidders.user') // Populate full bidder user information
-    .sort({ endDate: 1 }) // Sort by end date ascending (soonest ending first)
-    .skip(skip)
-    .limit(limit)
-    .lean(); // Use lean() for faster read-only queries
+    const [runningAuctions, totalCount] = await Promise.all([
+      Auction.find({
+        status: 'ongoing',
+        enabled: true,
+        startDate: { $lte: currentDate },
+        endDate: { $gte: currentDate },
+        ...currencyQuery
+      })
+      .populate('hostedBy') // Populate full host information
+      .populate('bidders.user') // Populate full bidder user information
+      .sort({ endDate: 1 }) // Sort by end date ascending (soonest ending first)
+      .skip(skip)
+      .limit(limit)
+      .lean(), // Use lean() for faster read-only queries
 
-    // Get total count for pagination info
-    const totalCount = await Auction.countDocuments({
-      startDate: { $lte: currentDate },
-      endDate: { $gte: currentDate },
-      ...currencyQuery
-    });
+      // Get total count for pagination info
+      Auction.countDocuments({
+        startDate: { $lte: currentDate },
+        endDate: { $gte: currentDate },
+        ...currencyQuery
+      })
+    ]);
 
     if (runningAuctions.length === 0 && page === 1) {
       return NextResponse.json({
@@ -65,14 +73,15 @@ export async function GET(req: NextRequest) {
     }
 
     // Process hostedBy and top bidders data to fetch display names from Neynar API
-    const uniqueFids = new Set<string>();
+    const hostFids = new Set<string>();
+    const bidderFids = new Set<string>();
     
-    // Collect unique FIDs that don't start with "none" from hosts and top bidders
+    // Collect unique FIDs separately for hosts and top bidders
     runningAuctions.forEach(auction => {
       // Add host FID
       if (auction.hostedBy?.socialId && auction.hostedBy.socialId !== '' && auction.hostedBy.socialPlatform !== "TWITTER") {
         console.log('Adding host FID:', auction.hostedBy.socialId);
-        uniqueFids.add(auction.hostedBy.socialId);
+        hostFids.add(auction.hostedBy.socialId);
       }
       
       // Add top bidder FID if there are bidders
@@ -80,42 +89,77 @@ export async function GET(req: NextRequest) {
         const highestBid = Math.max(...auction.bidders.map((bidder: any) => bidder.bidAmount));
         const topBidder = auction.bidders.find((bidder: any) => bidder.bidAmount === highestBid);
         if (topBidder?.user?.socialId && topBidder.user.socialId !== '' && topBidder.user.socialPlatform !== "TWITTER") {
-          uniqueFids.add(topBidder.user.socialId);
+          bidderFids.add(topBidder.user.socialId);
         }
       }
     });
 
-    // Fetch display names from Neynar API for valid FIDs
+    // Fetch display names from Neynar API separately for hosts and bidders
     let neynarUsers: Record<string, any> = {};
-    console.log('Unique FIDs collected:', Array.from(uniqueFids));
-    if (uniqueFids.size > 0) {
-      try {
-        const fidsArray = Array.from(uniqueFids);
-        console.log('Fetching user data for FIDs:', fidsArray);
-        const res = await fetch(
-          `https://api.neynar.com/v2/farcaster/user/bulk?fids=${fidsArray.join(',')}`,
-          {
-            headers: {
-              "x-api-key": process.env.NEYNAR_API_KEY as string,
-            },
+    
+    console.log('Host FIDs collected:', Array.from(hostFids));
+    console.log('Bidder FIDs collected:', Array.from(bidderFids));
+
+    // Combine all FIDs and fetch with cache
+    const allFids = [...Array.from(hostFids), ...Array.from(bidderFids)];
+    if (allFids.length > 0) {
+      neynarUsers = await getFidsWithCache(allFids);
+      
+      // Identify missing FIDs and make fallback API call if needed
+      const missingFids: string[] = [];
+      for (const fid of allFids) {
+        if (!neynarUsers[fid]) {
+          // Check if user has Twitter profile
+          const hasTwitterProfile = runningAuctions.some(auction => {
+            // Check host
+            if (auction.hostedBy?.socialId === fid && auction.hostedBy?.twitterProfile) {
+              return true;
+            }
+            // Check bidders
+            return auction.bidders.some((bidder: any) => 
+              bidder.user?.socialId === fid && bidder.user?.twitterProfile
+            );
+          });
+          
+          if (!hasTwitterProfile) {
+            missingFids.push(fid);
           }
-        );
-        
-        if (res.ok) {
-          const jsonRes = await res.json();
-          console.log('Neynar API response:', jsonRes);
-          if (jsonRes.users) {
-            // Create a map of fid -> user data
-            jsonRes.users.forEach((user: any) => {
-              neynarUsers[user.fid] = user;
-            });
-            console.log('Neynar users mapped:', Object.keys(neynarUsers));
-          }
-        } else {
-          console.error('Neynar API error:', res.status, await res.text());
         }
-      } catch (error) {
-        console.error('Error fetching user data from Neynar:', error);
+      }
+
+      // Make fallback Neynar API call for missing FIDs
+      if (missingFids.length > 0) {
+        try {
+          const response = await fetch(`https://api.neynar.com/v2/farcaster/user/bulk?fids=${missingFids.join(',')}`, {
+            headers: {
+              'api_key': process.env.NEYNAR_API_KEY || ''
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            const redisClient = getRedisClient();
+            
+            // Cache each user in Redis and add to neynarUsers
+            for (const user of data.users) {
+              neynarUsers[user.fid.toString()] = user;
+              
+              if (redisClient) {
+                try {
+                  await redisClient.setex(
+                    `fid:${user.fid}`,
+                    3600,
+                    JSON.stringify(user)
+                  );
+                } catch (err) {
+                  console.warn('Failed to cache Neynar user:', err);
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Fallback Neynar API call failed:', error);
+        }
       }
     }
 
@@ -167,8 +211,8 @@ export async function GET(req: NextRequest) {
 
       console.log("Auction's Top Bidder:", topBidder);
 
-      // Calculate participant count
-      const participantCount = auction.bidders.length;
+      // Calculate participant count (unique users only)
+      const participantCount = new Set(auction.bidders.map((bidder: any) => bidder.user._id.toString())).size;
 
       // Calculate time remaining
       const timeRemaining = auction.endDate.getTime() - currentDate.getTime();

@@ -33,11 +33,15 @@ export default function UserAuctions({ activeAuctions, endedAuctions }: UserAuct
     })
   }
 
-  const formatBidAmount = (amount: number, currency: string) => {
-    const decimals = currency.toUpperCase() === 'USDC' ? 6 : 18
-    const converted = amount / Math.pow(10, decimals)
-    return converted.toFixed(2)
-  }
+  // const formatBidAmount = (amount: number, currency: string) => {
+  //   console.log('formatBidAmount - amount:', amount, 'type:', typeof amount, 'currency:', currency)
+    
+  //   // Convert from wei to human-readable format
+  //   const decimals = currency.toUpperCase() === 'USDC' ? 6 : 18
+  //   const converted = amount / Math.pow(10, decimals)
+  //   console.log('Converted amount:', converted)
+  //   return converted.toFixed(2)
+  // }
 
   const AuctionCard = ({ auction, isActive }: { auction: Auction; isActive: boolean }) => (
     <div className="bg-white/10 rounded-lg p-4 hover:bg-white/15 transition-all duration-200 border border-white/10">
@@ -61,7 +65,7 @@ export default function UserAuctions({ activeAuctions, endedAuctions }: UserAuct
         <div className="flex justify-between text-sm">
           <span className="text-caption">Minimum Bid:</span>
           <span className="text-white font-medium">
-            {formatBidAmount(auction.minimumBid, auction.currency)} {auction.currency}
+            {`${auction.minimumBid} ${auction.currency}`}
           </span>
         </div>
 
@@ -69,7 +73,7 @@ export default function UserAuctions({ activeAuctions, endedAuctions }: UserAuct
           <span className="text-caption">Highest Bid:</span>
           <span className="text-primary font-bold">
             {auction.highestBid > 0 
-              ? `${formatBidAmount(auction.highestBid, auction.currency)} ${auction.currency}`
+              ? `${auction.highestBid} ${auction.currency}`
               : 'No bids yet'
             }
           </span>

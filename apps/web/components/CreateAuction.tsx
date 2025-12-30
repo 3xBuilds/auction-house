@@ -37,7 +37,6 @@ import TwitterAuthModal from "./UI/TwitterAuthModal";
 import LoginWithOAuth from "./utils/twitterConnect";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import AggregateConnector from "./utils/aggregateConnector";
-import { isWhitelisted } from "@/utils/whitelist";
 import { base as baseChain } from "viem/chains";
 import { ethers } from "ethers";
 
@@ -72,6 +71,8 @@ export default function CreateAuction() {
   const [loadingToastId, setLoadingToastId] = useState<string | null>(null);
   const { sendCalls, isSuccess, status } = useSendCalls();
   const [showTwitterModal, setShowTwitterModal] = useState(false);
+  const [storedDurationHours, setStoredDurationHours] = useState<number>(0);
+  const [storedMinBidAmountWei, setStoredMinBidAmountWei] = useState<bigint>(BigInt(0));
 
   const [currentStep, setCurrentStep] = useState(0);
   const [tokenPrice, setTokenPrice] = useState<number | null>(null);
@@ -83,9 +84,52 @@ export default function CreateAuction() {
 
   const navigate = useNavigateWithLoader();
 
+  const handleFallbackTransaction = async () => {
+    if (!loadingToastId || !genAuctionId || !selectedCurrency || !address) return;
+
+    try {
+      toast.loading("Fallback to External Wallets", { id: loadingToastId });
+
+      await externalWallets[0].switchChain(baseChain.id);
+
+      const contract = await writeNewContractSetup(
+        contractAdds.auctions,
+        auctionAbi,
+        externalWallets[0]
+      );
+
+      toast.loading("Waiting for transaction...", { id: loadingToastId });
+
+      // Call the smart contract
+      const txHash = await contract?.startAuction(
+        genAuctionId,
+        selectedCurrency.contractAddress as `0x${string}`,
+        auctionTitle,
+        BigInt(Math.round(storedDurationHours)),
+        storedMinBidAmountWei
+      );
+
+      await txHash?.wait();
+
+      if (!txHash) {
+        toast.error("Failed to submit transaction", { id: loadingToastId });
+        setIsLoading(false);
+        return;
+      }
+
+      toast.loading("Transaction confirmed!", { id: loadingToastId });
+
+      await processSuccess(genAuctionId);
+    } catch (error) {
+      console.error("Fallback transaction failed:", error);
+      toast.error("Fallback transaction failed. Please try again.", { id: loadingToastId });
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     // When transaction succeeds
-    if (isSuccess) {
+    if (status == "success") {
       if (loadingToastId) {
         toast.success("Transaction successful!", {
           id: loadingToastId,
@@ -94,14 +138,8 @@ export default function CreateAuction() {
       processSuccess(genAuctionId);
     }
     // When transaction fails (status === 'error')
-    else if (status === "error") {
-      if (loadingToastId) {
-        toast.error("Transaction failed. Please try again.", {
-          id: loadingToastId,
-        });
-      }
-      setIsLoading(false);
-      console.error("Transaction failed");
+    else if (status === "error" && genAuctionId && loadingToastId) {
+      handleFallbackTransaction();
     }
   }, [isSuccess, status]);
 
@@ -224,14 +262,12 @@ export default function CreateAuction() {
 
   // Function to convert bid amount to proper decimal format
   const convertBidAmountToWei = (
-    bidAmount: number,
-    decimals: number
-  ): bigint => {
-    // Convert the bid amount to the token's decimal representation
-    const factor = Math.pow(10, decimals);
-    const amountInWei = Math.floor(bidAmount * factor);
-    return BigInt(amountInWei);
-  };
+      bidAmount: number,
+      decimals: number
+    ): bigint => {
+      // Use ethers.js parseUnits to avoid floating point precision issues
+      return ethers.parseUnits(bidAmount.toString(), decimals);
+    };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -243,10 +279,24 @@ export default function CreateAuction() {
     }
     setIsLoading(true);
 
-    const whitelisted = isWhitelisted(address);
-    //first check if the user is whitelisted, if not, show error toast and return
-    if (!whitelisted) {
-      toast.error("You are not whitelisted to create an auction");
+    // Check whitelist from database
+    try {
+      const accessToken = await getAccessToken();
+      const whitelistResponse = await fetch(`/api/users/${address}/checkWhitelist`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      const whitelistData = await whitelistResponse.json();
+      
+      if (!whitelistData.whitelisted) {
+        toast.error("You are not whitelisted to create an auction");
+        setIsLoading(false);
+        return;
+      }
+    } catch (error) {
+      console.error("Error checking whitelist:", error);
+      toast.error("Failed to verify whitelist status");
       setIsLoading(false);
       return;
     }
@@ -395,6 +445,8 @@ export default function CreateAuction() {
           toast.loading("Transaction confirmed!", { id: toastId });
           await processSuccess(auctionId);
         } catch (e) {
+                await externalWallets[0].switchChain(baseChain.id);
+
           const contract = await writeNewContractSetup(
             contractAdds.auctions,
             auctionAbi,
@@ -427,11 +479,14 @@ export default function CreateAuction() {
       }
       // Farcaster/Base App Flow
       else {
+
         toast.loading("Preparing transaction for mobile wallet...", {
           id: toastId,
         });
 
         setGenAuctionId(auctionId);
+        setStoredDurationHours(durationHours);
+        setStoredMinBidAmountWei(minBidAmountWei);
         const calls = [
           {
             to: contractAdds.auctions,
@@ -439,8 +494,8 @@ export default function CreateAuction() {
             data: encodedStartAuctionData,
           },
         ];
-
-        if (context?.client.clientFid === 309857) {
+        try{
+if (context?.client.clientFid === 309857) {
           toast.loading("Connecting to Base SDK...", { id: toastId });
 
           const provider = createBaseAccountSDK({
@@ -489,6 +544,41 @@ export default function CreateAuction() {
             calls: calls,
           });
         }
+        }
+        catch(error){
+          toast.loading("Fallback to External Wallets");
+      await externalWallets[0].switchChain(baseChain.id);
+
+          const contract = await writeNewContractSetup(
+            contractAdds.auctions,
+            auctionAbi,
+            externalWallets[0]
+          );
+
+          toast.loading("Waiting for transaction...", { id: toastId });
+
+          // Call the smart contract
+          const txHash = await contract?.startAuction(
+            auctionId,
+            selectedCurrency.contractAddress as `0x${string}`,
+            auctionTitle,
+            BigInt(Math.round(durationHours)),
+            minBidAmountWei
+          );
+
+          await txHash?.wait();
+
+          if (!txHash) {
+            toast.error("Failed to submit transaction", { id: toastId });
+            setIsLoading(false);
+            return;
+          }
+
+          toast.loading("Transaction confirmed!", { id: toastId });
+
+          await processSuccess(auctionId);
+        }
+        
       }
     } catch (error: any) {
       console.error("Error creating auction:", error);

@@ -49,6 +49,7 @@ export default function LoginWithOAuth() {
     };
   }, [menuOpen]);
 
+
   const handleAddWallet = async (walletAddress: string) => {
     try {
       const accessToken = await getAccessToken();
@@ -78,6 +79,7 @@ export default function LoginWithOAuth() {
   const { login } = useLogin({
     onComplete: async ({ user, isNewUser, wasAlreadyAuthenticated, loginMethod, loginAccount }) => {
       console.log('User logged in successfully', user);
+      
       if (isNewUser && user.twitter?.subject) {
         console.log('New user detected, creating user in database');
         try {
@@ -142,13 +144,35 @@ export default function LoginWithOAuth() {
           console.error('Error saving Twitter profile:', error);
         }
       }
+      
+      // Check if iframe_redirect query parameter is present and redirect AFTER user creation
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('type') === 'iframe_redirect') {
+        window.location.href = 'https://wl.houseproto.fun/whitelist/house-protocol/portal';
+        return;
+      }
     },
     onError: (error) => {
       console.error('Login failed', error);
     }
   });
 
+    // Auto-trigger login if iframe_redirect query parameter is present
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('type') === 'iframe_redirect' && !authenticated) {
+      login({ loginMethods: ['twitter']});
+    }
+  }, [authenticated, login]);
+
   const handleTwitterLogin = () => {
+    // Check if running in an iframe
+    if (window.self !== window.top) {
+      // Redirect to the main site with iframe_redirect parameter
+      window.top!.location.href = 'https://houseproto.fun?type=iframe_redirect';
+      return;
+    }
+    
     // Opens Privy's login modal with Twitter as the login method
     login({ loginMethods: ['twitter']});
   };

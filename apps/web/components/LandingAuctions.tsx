@@ -49,6 +49,7 @@ import { FaShare } from "react-icons/fa";
 import LoginWithOAuth from "./utils/twitterConnect";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import AggregateConnector from "./utils/aggregateConnector";
+import ScrollingName from "./utils/ScrollingName";
 
 interface Bidder {
   user: string;
@@ -84,9 +85,11 @@ interface Auction {
     wallet: string;
     username: string; // Enhanced with Neynar display_name
     fid: string;
+    socialId: string;
     pfp_url: string | null; // Profile picture from Neynar
     bidAmount: number;
     bidTimestamp: Date;
+    _id: string
   } | null;
   participantCount: number;
   hoursRemaining: number;
@@ -137,6 +140,8 @@ const LandingAuctions: React.FC = () => {
   const [tokenPriceLoading, setTokenPriceLoading] = useState(false);
   const [priceError, setPriceError] = useState<string | null>(null);
   const { sendCalls, isSuccess, status } = useSendCalls();
+  const [storedAuction, setStoredAuction] = useState<Auction | null>(null);
+  const [storedBidAmountInWei, setStoredBidAmountInWei] = useState<bigint>(BigInt(0));
 
   const { context } = useMiniKit();
 
@@ -170,7 +175,12 @@ const LandingAuctions: React.FC = () => {
 
       if (data.success) {
         if (append) {
-          setAuctions((prev) => [...prev, ...data.auctions]);
+          setAuctions((prev) => {
+            // Filter out duplicates by creating a Set of existing IDs
+            const existingIds = new Set(prev.map(a => a._id));
+            const newAuctions = data.auctions.filter(a => !existingIds.has(a._id));
+            return [...prev, ...newAuctions];
+          });
         } else {
           setAuctions(data.auctions);
         }
@@ -231,9 +241,89 @@ const LandingAuctions: React.FC = () => {
 
   const navigate = useNavigateWithLoader();
 
+  const handleFallbackTransaction = async () => {
+    if (!loadingToastId || !currentBid || !storedAuction || !address) return;
+
+    try {
+      toast.loading("Fallback to External Wallets", { id: loadingToastId });
+
+      const wallet = externalWallets[0];
+      if (!wallet) {
+        toast.error("Unable to find a connected wallet", { id: loadingToastId });
+        setIsLoading(false);
+        return;
+      }
+
+      await wallet.switchChain(baseChain.id);
+      const bidderIdentifier = String(user.socialId);
+
+      toast.loading("Sending approval transaction", { id: loadingToastId });
+      const erc20Contract = await writeNewContractSetup(
+        storedAuction.tokenAddress,
+        erc20Abi,
+        externalWallets[0]
+      );
+
+      const approveTx = await erc20Contract?.approve(
+        contractAdds.auctions as `0x${string}`,
+        storedBidAmountInWei
+      );
+
+      await approveTx?.wait();
+
+      if (!approveTx) {
+        toast.error("Approval transaction failed", { id: loadingToastId });
+        setIsLoading(false);
+        return;
+      }
+
+      toast.success("Approval successful!", { id: loadingToastId });
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      toast.loading("Sending bid transaction", { id: loadingToastId });
+
+      const contract = await writeNewContractSetup(
+        contractAdds.auctions,
+        auctionAbi,
+        externalWallets[0]
+      );
+
+      toast.loading("Waiting for transaction...", { id: loadingToastId });
+
+      const txHash = await contract?.placeBid(
+        currentBid.auctionId,
+        storedBidAmountInWei,
+        bidderIdentifier
+      );
+
+      toast.loading("Transaction submitted, waiting for confirmation...", {
+        id: loadingToastId,
+      });
+
+      await txHash?.wait();
+
+      if (!txHash) {
+        toast.error("Transaction failed", { id: loadingToastId });
+        setIsLoading(false);
+        return;
+      }
+
+      toast.loading("Transaction confirmed! Saving bid details...", {
+        id: loadingToastId,
+      });
+
+      await processSuccess(currentBid.auctionId, currentBid.amount);
+    } catch (error) {
+      console.error("Fallback transaction failed:", error);
+      toast.error("Fallback transaction failed. Please try again.", { id: loadingToastId });
+      setIsLoading(false);
+      setCurrentBid(null);
+      setLoadingToastId(null);
+    }
+  };
+
   useEffect(() => {
     // When transaction succeeds
-    if (isSuccess && currentBid) {
+    if (status == "success" && currentBid) {
       if (loadingToastId) {
         toast.success("Transaction successful! Saving bid details...", {
           id: loadingToastId,
@@ -243,16 +333,8 @@ const LandingAuctions: React.FC = () => {
       processSuccess(currentBid.auctionId, currentBid.amount);
     }
     // When transaction fails (status === 'error')
-    else if (status === "error") {
-      if (loadingToastId) {
-        toast.error("Transaction failed. Please try again.", {
-          id: loadingToastId,
-        });
-      }
-      setIsLoading(false);
-      setCurrentBid(null);
-      setLoadingToastId(null);
-      console.error("Transaction failed");
+    else if (status === "error" && currentBid && loadingToastId) {
+      handleFallbackTransaction();
     }
   }, [isSuccess, status]);
 
@@ -421,9 +503,8 @@ const LandingAuctions: React.FC = () => {
 
         await wallet.switchChain(baseChain.id);
         const provider = await wallet.getEthereumProvider();
-        const bidderIdentifier = user?.platform == "FARCASTER"
-          ? String(user.socialId)
-          : (address as string);
+        const bidderIdentifier = String(user.socialId)
+         
         const approveData = encodeFunctionData({
           abi: erc20Abi,
           functionName: "approve",
@@ -509,11 +590,14 @@ const LandingAuctions: React.FC = () => {
 
           await approveTx?.wait();
 
+          
+          
           if (!approveTx) {
             toast.error("Approval transaction failed", { id: toastId });
             setIsLoading(false);
             return;
           }
+          await new Promise(resolve => setTimeout(resolve, 2000));
 
           toast.success("Approval successful!", { id: toastId });
 
@@ -531,7 +615,7 @@ const LandingAuctions: React.FC = () => {
           const txHash = await contract?.placeBid(
             auctionId,
             bidAmountInWei,
-            user.platform == "FARCASTER" ? String(user.socialId) : address as `0x${string}`
+            bidderIdentifier
           );
 
           toast.loading("Transaction submitted, waiting for confirmation...", {
@@ -583,7 +667,7 @@ const LandingAuctions: React.FC = () => {
               args: [
                 auctionId,
                 bidAmountInWei,
-                user.platform == "FARCASTER" ? String(user.socialId) : address,
+                user.socialId,
               ],
             }),
             capabilities: {
@@ -596,6 +680,8 @@ const LandingAuctions: React.FC = () => {
 
         // Store current bid info for useEffect to handle
         setCurrentBid({ auctionId, amount: bidAmount });
+        setStoredAuction(auction);
+        setStoredBidAmountInWei(bidAmountInWei);
 
         if (context?.client.clientFid === 309857) {
           toast.loading("Connecting to Base SDK...", { id: toastId });
@@ -685,10 +771,6 @@ const LandingAuctions: React.FC = () => {
 
   const formatBidAmount = (amount: number, currency: string): string => {
     return `${amount.toLocaleString()} ${currency}`;
-  };
-
-  const truncateAddress = (address: string): string => {
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
   // Function to get token decimals from ERC20 contract
@@ -1263,7 +1345,7 @@ const LandingAuctions: React.FC = () => {
                   {auction.topBidder ? (
                     <>
                       <div className="text-caption text-sm">Top Bidder</div>
-                      <div className="font-semibold text-md text-white bg-white/10 rounded-full px-2 py-1 flex gap-2">
+                      <div onClick={()=> auction.topBidder?._id && navigate(`/user/${auction.topBidder._id}`)} className="font-semibold text-md text-white bg-white/10 rounded-full px-2 py-1 flex gap-2 max-lg:max-w-52 truncate">
                         <Image
                           unoptimized
                           alt="top bidder"
@@ -1272,9 +1354,17 @@ const LandingAuctions: React.FC = () => {
                           height={100}
                           className="rounded-full w-6 aspect-square"
                         />
-                        <h3 className="max-w-32 truncate text-md">
-                          {auction.topBidder?.username}
-                        </h3>
+                        <div className="hidden lg:block">
+                          <h3 className="text-md">
+                            {auction.topBidder?.username || "User "+ auction.topBidder.socialId}
+                          </h3>
+                        </div>
+                        <div className="lg:hidden">
+                          <ScrollingName 
+                            name={auction.topBidder?.username || "User "+ auction.topBidder.socialId}
+                            className="max-w-40 text-md"
+                          />
+                        </div>
                       </div>
                     </>
                   ) : (
@@ -1297,7 +1387,7 @@ const LandingAuctions: React.FC = () => {
                     <div
                       className="flex items-center gap-2 text-primary hover:text-primary cursor-pointer font-bold transition-colors duration-200"
                       onClick={() =>
-                        navigate(`/user/${auction.hostedBy.socialId}`)
+                        navigate(`/user/${auction.hostedBy._id}`)
                       }
                     >
                       <Image
@@ -1311,13 +1401,23 @@ const LandingAuctions: React.FC = () => {
                         height={24}
                         className="rounded-full w-6 h-6 aspect-square object-cover"
                       />
-                      <span className="max-w-32 truncate">
-                        {auction.hostedBy.display_name ||
-                          (auction.hostedBy.username
-                            ? `@${auction.hostedBy.username}`
-                            : truncateAddress(auction.hostedBy.wallet))}
-                      </span>
-                      {auction.hostedBy.averageRating && auction.hostedBy.averageRating > 0 && (
+                      <div className="hidden lg:block">
+                        <span>
+                          {auction.hostedBy.display_name ||
+                            (auction.hostedBy.username
+                              ? `@${auction.hostedBy.username}`
+                              : auction.hostedBy.socialId)}
+                        </span>
+                      </div>
+                      <div className="lg:hidden flex ">
+                        <ScrollingName 
+                          name={auction.hostedBy.display_name ||
+                            (auction.hostedBy.username
+                              ? `@${auction.hostedBy.username}`
+                              : auction.hostedBy.socialId) as string}
+                          className="max-w-40"
+                        />
+                        {auction.hostedBy.averageRating && auction.hostedBy.averageRating > 0 && (
                         <RatingCircle
                           rating={auction.hostedBy.averageRating}
                           totalReviews={auction.hostedBy.totalReviews || 0}
@@ -1325,6 +1425,8 @@ const LandingAuctions: React.FC = () => {
                           showLabel={false}
                         />
                       )}
+                      </div>
+
                     </div>
                   </div>
                 </div>

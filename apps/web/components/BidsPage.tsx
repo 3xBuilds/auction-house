@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Heading from "./UI/Heading";
 import RatingCircle from "./UI/RatingCircle";
+import ScrollingName from "./utils/ScrollingName";
 import {
   auctionAbi,
   contractAdds,
@@ -122,6 +123,9 @@ export default function BidPage() {
   const [tokenPrice, setTokenPrice] = useState<number | null>(null);
   const [tokenPriceLoading, setTokenPriceLoading] = useState(false);
   const [priceError, setPriceError] = useState<string | null>(null);
+  
+  // Token price for auction (separate from bid input)
+  const [auctionTokenPrice, setAuctionTokenPrice] = useState<number | null>(null);
 
   // Additional state for handleBid functionality
   const [loadingToastId, setLoadingToastId] = useState<string | null>(null);
@@ -134,6 +138,8 @@ export default function BidPage() {
   // Hooks
   const { sendCalls, isSuccess, status } = useSendCalls();
   const { context } = useMiniKit();
+  const [storedAuction, setStoredAuction] = useState<Auction | null>(null);
+  const [storedBidAmountInWei, setStoredBidAmountInWei] = useState<bigint>(BigInt(0));
   const { user } = useGlobalContext();
   const { getAccessToken } = usePrivy();
 
@@ -173,10 +179,90 @@ export default function BidPage() {
     return () => clearTimeout(timeoutId);
   }, [bidAmount, auctionData?.tokenAddress]);
 
+  const handleFallbackTransaction = async () => {
+    if (!loadingToastId || !currentBid || !storedAuction || !address) return;
+
+    try {
+      toast.loading("Fallback to External Wallets", { id: loadingToastId });
+
+      const wallet = externalWallets[0];
+      if (!wallet) {
+        toast.error("Unable to find a connected wallet", { id: loadingToastId });
+        setIsLoading(false);
+        return;
+      }
+
+      await wallet.switchChain(baseChain.id);
+      const bidderIdentifier = String(user.socialId);
+
+      toast.loading("Sending approval transaction", { id: loadingToastId });
+      const erc20Contract = await writeNewContractSetup(
+        storedAuction.tokenAddress,
+        erc20Abi,
+        externalWallets[0]
+      );
+
+      const approveTx = await erc20Contract?.approve(
+        contractAdds.auctions as `0x${string}`,
+        storedBidAmountInWei
+      );
+
+      await approveTx?.wait();
+
+      if (!approveTx) {
+        toast.error("Approval transaction failed", { id: loadingToastId });
+        setIsLoading(false);
+        return;
+      }
+
+      toast.success("Approval successful!", { id: loadingToastId });
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      toast.loading("Sending bid transaction", { id: loadingToastId });
+
+      const contract = await writeNewContractSetup(
+        contractAdds.auctions,
+        auctionAbi,
+        externalWallets[0]
+      );
+
+      toast.loading("Waiting for transaction...", { id: loadingToastId });
+
+      const txHash = await contract?.placeBid(
+        currentBid.auctionId,
+        storedBidAmountInWei,
+        bidderIdentifier
+      );
+
+      toast.loading("Transaction submitted, waiting for confirmation...", {
+        id: loadingToastId,
+      });
+
+      await txHash?.wait();
+
+      if (!txHash) {
+        toast.error("Transaction failed", { id: loadingToastId });
+        setIsLoading(false);
+        return;
+      }
+
+      toast.loading("Transaction confirmed! Saving bid details...", {
+        id: loadingToastId,
+      });
+
+      await processSuccess(currentBid.auctionId, currentBid.amount);
+    } catch (error) {
+      console.error("Fallback transaction failed:", error);
+      toast.error("Fallback transaction failed. Please try again.", { id: loadingToastId });
+      setIsLoading(false);
+      setCurrentBid(null);
+      setLoadingToastId(null);
+    }
+  };
+
   // Handle transaction success/failure
   useEffect(() => {
     // When transaction succeeds
-    if (isSuccess && currentBid) {
+    if (status == "success" && currentBid) {
       if (loadingToastId) {
         toast.success("Transaction successful! Saving bid details...", {
           id: loadingToastId,
@@ -186,16 +272,8 @@ export default function BidPage() {
       processSuccess(currentBid.auctionId, currentBid.amount);
     }
     // When transaction fails (status === 'error')
-    else if (status === "error") {
-      if (loadingToastId) {
-        toast.error("Transaction failed. Please try again.", {
-          id: loadingToastId,
-        });
-      }
-      setIsLoading(false);
-      setCurrentBid(null);
-      setLoadingToastId(null);
-      console.error("Transaction failed");
+    else if (status === "error" && currentBid && loadingToastId) {
+      handleFallbackTransaction();
     }
   }, [isSuccess, status]);
 
@@ -210,6 +288,8 @@ export default function BidPage() {
     );
     return calculateUSDValue(amount, tokenPrice);
   };
+
+
 
   useEffect(() => {
     const fetchAuctionData = async () => {
@@ -267,6 +347,16 @@ export default function BidPage() {
         const data = await processedResponse.json();
         console.log("Fetched auction data from API:", data);
         setAuctionData(data);
+        
+        // Fetch token price for USD calculations
+        if (data.tokenAddress) {
+          try {
+            const price = await fetchTokenPrice(data.tokenAddress);
+            setAuctionTokenPrice(price);
+          } catch (error) {
+            console.error("Error fetching auction token price:", error);
+          }
+        }
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -341,6 +431,13 @@ export default function BidPage() {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
   };
+  
+  const calculateBidderUSDValue = (bidAmount: string): number | null => {
+    if (!auctionTokenPrice || !auctionData) return null;
+    const decimals = auctionData.currency.toUpperCase() === "USDC" ? 6 : 18;
+    const amount = parseFloat(bidAmount) / Math.pow(10, decimals);
+    return amount * auctionTokenPrice;
+  };
 
   const openBidDrawer = () => {
     setBidAmount("");
@@ -409,10 +506,8 @@ export default function BidPage() {
     bidAmount: number,
     decimals: number
   ): bigint => {
-    // Convert the bid amount to the token's decimal representation
-    const factor = Math.pow(10, decimals);
-    const amountInWei = Math.floor(bidAmount * factor);
-    return BigInt(amountInWei);
+    // Use ethers.js parseUnits to avoid floating point precision issues
+    return ethers.parseUnits(bidAmount.toString(), decimals);
   };
 
   const processSuccess = async (auctionId: string, bidAmount: number) => {
@@ -659,9 +754,7 @@ export default function BidPage() {
 
         await wallet.switchChain(baseChain.id);
         const provider = await wallet.getEthereumProvider();
-        const bidderIdentifier = user?.platform == "FARCASTER"
-          ? String(user.socialId)
-          : (address as string);
+        const bidderIdentifier = String(user.socialId)
         const approveData = encodeFunctionData({
           abi: erc20Abi,
           functionName: "approve",
@@ -758,6 +851,8 @@ export default function BidPage() {
             return;
           }
 
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
           toast.success("Approval successful!", { id: toastId });
 
           toast.loading("Sending bid transaction", { id: toastId });
@@ -774,7 +869,7 @@ export default function BidPage() {
           const txHash = await contract?.placeBid(
             auctionId,
             bidAmountInWei,
-            user.platform == "FARCASTER" ? String(user.socialId) : address
+            bidderIdentifier
           );
 
           toast.loading("Transaction submitted, waiting for confirmation...", {
@@ -834,6 +929,8 @@ export default function BidPage() {
 
         // Store current bid info for useEffect to handle
         setCurrentBid({ auctionId, amount: bidAmount });
+        setStoredAuction(auction);
+        setStoredBidAmountInWei(bidAmountInWei);
 
         if (context?.client.clientFid === 309857) {
           toast.loading("Connecting to Base SDK...", { id: toastId });
@@ -988,165 +1085,14 @@ export default function BidPage() {
       <div className="max-w-6xl max-lg:mx-auto px-4 sm:px-6 lg:px-8">
         {/* Auction Header */}
         <div className="bg-white/10 rounded-lg shadow-md lg:p-4 p-2 mb-8 relative">
-          <div className="flex justify-between items-start mb-4">
+          <div className="mb-4">
             <div className="flex-1">
               <Heading size="md">{auctionData.auctionName}</Heading>
               {auctionData.description && renderDescription(auctionData.description)}
             </div>
-            <div className="flex items-center gap-2">
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-bold ${
-                  auctionData.auctionStatus === "Running"
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
-                }`}
-              >
-                {auctionData.auctionStatus}
-              </span>
-              <div className="relative">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 text-white hover:bg-white/20"
-                  onClick={handleShareClick}
-                >
-                  <IoShareOutline className="h-4 w-4" />
-                </Button>
-                {shareDropdownOpen && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      right: "0px",
-                      top: "40px",
-                      background: "rgba(0, 0, 0, 0.8)",
-                      backdropFilter: "blur(24px)",
-                      borderRadius: "8px",
-                      boxShadow:
-                        "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
-                      zIndex: 50,
-                      width: "180px",
-                      padding: "8px",
-                    }}
-                  >
-                    <button
-                      style={{
-                        width: "100%",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        padding: "8px 12px",
-                        fontSize: "14px",
-                        color: "hsl(var(--primary))",
-                        backgroundColor: "transparent",
-                        borderRadius: "4px",
-                        border: "none",
-                        cursor: "pointer",
-                        transition: "all 0.2s",
-                        whiteSpace: "nowrap",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor =
-                          "rgba(255, 255, 255, 0.1)";
-                        e.currentTarget.style.color = "hsl(var(--primary))";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "transparent";
-                        e.currentTarget.style.color = "hsl(var(--primary))";
-                      }}
-                      onClick={() =>
-                        copyToClipboard(
-                          `${process.env.NEXT_PUBLIC_DOMAIN}/bid/${blockchainAuctionId}`,
-                          "Web URL"
-                        )
-                      }
-                    >
-                      <IoLinkOutline
-                        style={{ height: "16px", width: "16px", flexShrink: 0 }}
-                      />
-                      Web URL
-                    </button>
-                    <button
-                      style={{
-                        width: "100%",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                        padding: "8px 12px",
-                        fontSize: "14px",
-                        color: "hsl(var(--primary))",
-                        backgroundColor: "transparent",
-                        borderRadius: "4px",
-                        border: "none",
-                        cursor: "pointer",
-                        transition: "all 0.2s",
-                        whiteSpace: "nowrap",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor =
-                          "rgba(255, 255, 255, 0.1)";
-                        e.currentTarget.style.color = "hsl(var(--primary))";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "transparent";
-                        e.currentTarget.style.color = "hsl(var(--primary))";
-                      }}
-                      onClick={() =>
-                        copyToClipboard(
-                          `${process.env.NEXT_PUBLIC_MINIAPP_URL}/bid/${blockchainAuctionId}`,
-                          "Miniapp URL"
-                        )
-                      }
-                    >
-                      <IoCopyOutline
-                        style={{ height: "16px", width: "16px", flexShrink: 0 }}
-                      />
-                      Miniapp URL
-                    </button>
-                    {context && (
-                      <button
-                        style={{
-                          width: "100%",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          padding: "8px 12px",
-                          fontSize: "14px",
-                          color: "hsl(var(--primary))",
-                          backgroundColor: "transparent",
-                          borderRadius: "4px",
-                          border: "none",
-                          cursor: "pointer",
-                          transition: "all 0.2s",
-                          whiteSpace: "nowrap",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor =
-                            "rgba(255, 255, 255, 0.1)";
-                          e.currentTarget.style.color = "hsl(var(--primary))";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = "transparent";
-                          e.currentTarget.style.color = "hsl(var(--primary))";
-                        }}
-                        onClick={() => composeCast()}
-                      >
-                        <FaShare
-                          style={{
-                            height: "16px",
-                            width: "16px",
-                            flexShrink: 0,
-                          }}
-                        />
-                        Share Cast
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-2">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 mb-4">
             <div>
               <p className="text-xs text-caption mb-1">Hosted By</p>
               <div className="flex items-center gap-2">
@@ -1209,6 +1155,158 @@ export default function BidPage() {
               </p>
             </div>
           </div>
+
+          <div className="flex items-center justify-end gap-2 mt-4">
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-bold ${
+                auctionData.auctionStatus === "Running"
+                  ? "bg-green-100 text-green-800"
+                  : "bg-red-100 text-red-800"
+              }`}
+            >
+              {auctionData.auctionStatus}
+            </span>
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                onClick={handleShareClick}
+              >
+                <IoShareOutline className="h-4 w-4" />
+              </Button>
+              {shareDropdownOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    right: "0px",
+                    bottom: "40px",
+                    background: "rgba(0, 0, 0, 0.8)",
+                    backdropFilter: "blur(24px)",
+                    borderRadius: "8px",
+                    boxShadow:
+                      "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+                    zIndex: 50,
+                    width: "180px",
+                    padding: "8px",
+                  }}
+                >
+                  <button
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "8px 12px",
+                      fontSize: "14px",
+                      color: "hsl(var(--primary))",
+                      backgroundColor: "transparent",
+                      borderRadius: "4px",
+                      border: "none",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      whiteSpace: "nowrap",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor =
+                        "rgba(255, 255, 255, 0.1)";
+                      e.currentTarget.style.color = "hsl(var(--primary))";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                      e.currentTarget.style.color = "hsl(var(--primary))";
+                    }}
+                    onClick={() =>
+                      copyToClipboard(
+                        `${process.env.NEXT_PUBLIC_DOMAIN}/bid/${blockchainAuctionId}`,
+                        "Web URL"
+                      )
+                    }
+                  >
+                    <IoLinkOutline
+                      style={{ height: "16px", width: "16px", flexShrink: 0 }}
+                    />
+                    Web URL
+                  </button>
+                  <button
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "8px 12px",
+                      fontSize: "14px",
+                      color: "hsl(var(--primary))",
+                      backgroundColor: "transparent",
+                      borderRadius: "4px",
+                      border: "none",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      whiteSpace: "nowrap",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor =
+                        "rgba(255, 255, 255, 0.1)";
+                      e.currentTarget.style.color = "hsl(var(--primary))";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                      e.currentTarget.style.color = "hsl(var(--primary))";
+                    }}
+                    onClick={() =>
+                      copyToClipboard(
+                        `${process.env.NEXT_PUBLIC_MINIAPP_URL}/bid/${blockchainAuctionId}`,
+                        "Miniapp URL"
+                      )
+                    }
+                  >
+                    <IoCopyOutline
+                      style={{ height: "16px", width: "16px", flexShrink: 0 }}
+                    />
+                    Miniapp URL
+                  </button>
+                  {context && (
+                    <button
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "8px 12px",
+                        fontSize: "14px",
+                        color: "hsl(var(--primary))",
+                        backgroundColor: "transparent",
+                        borderRadius: "4px",
+                        border: "none",
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                        whiteSpace: "nowrap",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor =
+                          "rgba(255, 255, 255, 0.1)";
+                        e.currentTarget.style.color = "hsl(var(--primary))";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = "transparent";
+                        e.currentTarget.style.color = "hsl(var(--primary))";
+                      }}
+                      onClick={() => composeCast()}
+                    >
+                      <FaShare
+                        style={{
+                          height: "16px",
+                          width: "16px",
+                          flexShrink: 0,
+                        }}
+                      />
+                      Share Cast
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Click outside to close share dropdown */}
@@ -1244,6 +1342,7 @@ export default function BidPage() {
                       bidder.userId ? "cursor-pointer" : ""
                     }`}
                     onClick={() =>
+
                       bidder.userId && navigate(`/user/${bidder.userId}`)
                     }
                   >
@@ -1253,10 +1352,13 @@ export default function BidPage() {
                         alt={bidder.displayName}
                         className="w-8 h-8 rounded-full"
                       />
-                      <div>
-                        <p className="font-semibold text-white max-w-40 truncate">
+                      <div className="hidden lg:block">
+                        <p className="font-semibold text-white">
                           {bidder.displayName}
                         </p>
+                      </div>
+                      <div className="lg:hidden">
+                        <ScrollingName name={bidder.displayName} className="max-w-40 font-semibold text-white" />
                       </div>
                     </div>
 
@@ -1268,11 +1370,14 @@ export default function BidPage() {
                         )}{" "}
                         {auctionData.currency}
                       </p>
-                      {bidder.usdValue && (
-                        <p className="text-xs text-secondary text-right">
-                          {formatUSDAmount(bidder.usdValue)}
-                        </p>
-                      )}
+                      {(() => {
+                        const usdValue = calculateBidderUSDValue(bidder.bidAmount);
+                        return usdValue !== null && (
+                          <p className="text-xs text-secondary text-right">
+                            ${usdValue.toFixed(2)}
+                          </p>
+                        );
+                      })()}
                     </div>
                   </div>
                 ))}

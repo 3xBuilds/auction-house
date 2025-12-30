@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/utils/auth';
 import User from '@/utils/schemas/User';
 import dbConnect from '@/utils/db';
 import { authenticateRequest } from '@/utils/authService';
@@ -37,8 +35,12 @@ export async function POST(request: NextRequest) {
           }
         }
       },
-      { new: true, upsert: true }
+      { new: true }
     );
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found. Please complete registration first.' }, { status: 404 });
+    }
 
     console.log('Twitter profile updated:', user);
 
