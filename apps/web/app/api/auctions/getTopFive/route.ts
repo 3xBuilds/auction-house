@@ -37,8 +37,14 @@ export async function GET(req: NextRequest) {
         endDate: { $gte: currentDate },
         ...currencyQuery
       })
-      .populate('hostedBy') // Populate full host information
-      .populate('bidders.user') // Populate full bidder user information
+      .populate({
+        path: 'hostedBy',
+        select: '_id wallet wallets fid socialId socialPlatform username twitterProfile averageRating totalReviews'
+      }) // Populate full host information with explicit field selection
+      .populate({
+        path: 'bidders.user',
+        select: '_id wallet wallets fid socialId socialPlatform username twitterProfile'
+      }) // Populate full bidder user information
       .sort({ endDate: 1 }) // Sort by end date ascending (soonest ending first)
       .skip(skip)
       .limit(limit)
@@ -220,6 +226,11 @@ export async function GET(req: NextRequest) {
 
       // Process hostedBy to add username and display_name fields
       let enhancedHostedBy = { ...auction.hostedBy };
+      console.log('Original hostedBy data:', {
+        socialId: auction.hostedBy?.socialId,
+        averageRating: auction.hostedBy?.averageRating,
+        totalReviews: auction.hostedBy?.totalReviews
+      });
       if (auction.hostedBy?.socialId && auction.hostedBy.socialId !== '' && auction.hostedBy.socialPlatform !== "TWITTER") {
         // For valid FIDs, use data from Neynar API
         const neynarUser = neynarUsers[auction.hostedBy.socialId];
@@ -259,8 +270,9 @@ export async function GET(req: NextRequest) {
         ...auction,
         hostedBy: {
           ...enhancedHostedBy,
-          averageRating: auction.hostedBy?.averageRating || 0,
-          totalReviews: auction.hostedBy?.totalReviews || 0
+          // Preserve the fetched values; only use 0 if they're explicitly undefined/null
+          averageRating: auction.hostedBy?.averageRating ?? 0,
+          totalReviews: auction.hostedBy?.totalReviews ?? 0
         },
         highestBid,
         topBidder,

@@ -173,6 +173,8 @@ const LandingAuctions: React.FC = () => {
       );
       const data: ApiResponse = await response.json();
 
+      console.log("Fetched auctions data:", data);
+
       if (data.success) {
         if (append) {
           setAuctions((prev) => {
@@ -1385,7 +1387,7 @@ const LandingAuctions: React.FC = () => {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-caption">Hosted by:</span>
                     <div
-                      className="flex items-center gap-2 text-primary hover:text-primary cursor-pointer font-bold transition-colors duration-200"
+                      className="flex items-center gap-2 text-primary hover:text-primary cursor-pointer font-bold transition-colors duration-200 justify-center"
                       onClick={() =>
                         navigate(`/user/${auction.hostedBy._id}`)
                       }
@@ -1417,15 +1419,17 @@ const LandingAuctions: React.FC = () => {
                               : auction.hostedBy.socialId) as string}
                           className="max-w-40"
                         />
-                        {auction.hostedBy.averageRating && auction.hostedBy.averageRating > 0 && (
+                        
+                      </div>
+
+                      {(auction.hostedBy.averageRating ?? 0) > 0 && (auction.hostedBy.totalReviews ?? 0) > 0 && (
                         <RatingCircle
                           rating={auction.hostedBy.averageRating}
-                          totalReviews={auction.hostedBy.totalReviews || 0}
+                          totalReviews={auction.hostedBy.totalReviews}
                           size="sm"
                           showLabel={false}
                         />
                       )}
-                      </div>
 
                     </div>
                   </div>

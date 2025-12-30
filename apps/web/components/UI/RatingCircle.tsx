@@ -1,24 +1,24 @@
 import React from 'react';
 
 interface RatingCircleProps {
-  rating: number;
+  rating?: number;
   totalReviews?: number;
   size?: 'sm' | 'md' | 'lg';
   showLabel?: boolean;
 }
 
 const RatingCircle: React.FC<RatingCircleProps> = ({
-  rating,
-  totalReviews,
+  rating = 0,
+  totalReviews = 0,
   size = 'md',
   showLabel = true,
 }) => {
   const percentage = (rating / 5) * 100;
   
   const sizes = {
-    sm: { circle: 32, stroke: 3, text: 'text-xs' },
-    md: { circle: 40, stroke: 4, text: 'text-sm' },
-    lg: { circle: 56, stroke: 5, text: 'text-base' },
+    sm: { circle: 20, stroke: 3, text: 'text-xs' },
+    md: { circle: 32, stroke: 4, text: 'text-sm' },
+    lg: { circle: 40, stroke: 5, text: 'text-base' },
   };
   
   const { circle, stroke, text } = sizes[size];
@@ -33,6 +33,7 @@ const RatingCircle: React.FC<RatingCircleProps> = ({
     return '#ef4444'; // red
   };
 
+  if(totalReviews && totalReviews > 0)
   return (
     <div className="flex items-center gap-2">
       <div className="relative" style={{ width: circle, height: circle }}>

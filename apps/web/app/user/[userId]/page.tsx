@@ -131,7 +131,7 @@ export default function UserPage() {
         <div className="bg-white/10 rounded-lg shadow-md lg:p-4 p-2 mb-8 border border-white/10">
           <div className="flex items-center gap-4">
             <div className="flex-1 min-w-0">
-              <div className="flex max-lg:flex-col items-center justify-between gap-2">
+              <div className="flex lg:justify-between mb-4 max-lg:flex-col items-center justify-between gap-2">
                 <div>
                     <div className="flex items-center gap-2">
                         {/* Profile Picture */}
@@ -146,12 +146,11 @@ export default function UserPage() {
                         {userData.user.display_name || (userData.user.username ? `@${userData.user.username}` : 'User Profile')}
                     </Heading>
 
-                    {userData.user.averageRating &&
-                      userData.user.averageRating > 0 && (
+                    {(userData.user.averageRating ?? 0) > 0 && (userData.user.totalReviews ?? 0) > 0 && (
                         <div className="relative">
                           <RatingCircle
                             rating={userData.user.averageRating}
-                            totalReviews={userData.user.totalReviews || 0}
+                            totalReviews={userData.user.totalReviews}
                             size="md"
                             showLabel={false}
                           />
@@ -215,7 +214,7 @@ export default function UserPage() {
                       Profile
                     </button>
                   )}
-                  <div className="flex gap-2 w-full items-center justify-center">
+                  {/* <div className="flex gap-2 w-full items-center justify-center">
                     {userData.user.x_username && (
                       <div className="">
                         <a
@@ -250,20 +249,21 @@ export default function UserPage() {
                         Profile
                       </button>
                     )}
-                  </div>
+                  </div> */}
                 </div>
-                <div className="lg:text-right text-center flex flex-col items-center gap-2">
+                {/* <div className="lg:text-right text-center flex flex-col items-center gap-2"> */}
                   {/* View Profile Button - only show if context is available and user has fid */}
 
-                  <div>
+                {/* </div> */}
+              </div>
+
+              <div className="flex flex-col items-between">
                     <p className="text-caption text-xs">Total Auctions</p>
-                    <p className="text-2xl font-bold text-primary">
+                    <p className="text-2xl font-bold text-primary w-full lg:text-right text-center">
                       {userData.activeAuctions.length +
                         userData.endedAuctions.length}
                     </p>
                   </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
