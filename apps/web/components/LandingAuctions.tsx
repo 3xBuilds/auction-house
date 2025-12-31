@@ -359,6 +359,7 @@ const LandingAuctions: React.FC = () => {
         body: JSON.stringify({
           bidAmount: bidAmount,
           socialId: user?.socialId,
+          privyId: user?.privyId || undefined,
         }),
       });
 

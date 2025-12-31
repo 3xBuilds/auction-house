@@ -154,9 +154,9 @@ export default function UserPage() {
                             size="md"
                             showLabel={false}
                           />
-                          <div className="absolute text-sm font-bold top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                          {/* <div className="absolute text-sm font-bold top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                             {userData.user.averageRating}
-                          </div>
+                          </div> */}
                         </div>
                       )}
                     

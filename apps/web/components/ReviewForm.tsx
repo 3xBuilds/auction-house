@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import RatingStars from '@/components/UI/RatingStars';
+
 import Input from '@/components/UI/Input';
 import { Button } from '@/components/UI/button';
 import toast from 'react-hot-toast';
 import Heading from './UI/Heading';
 import { getAccessToken } from '@privy-io/react-auth';
+import RatingStars from './UI/RatingStars';
 
 interface ReviewFormProps {
   auctionId: string;

@@ -115,6 +115,7 @@ useEffect(() => {
       socialId: privyUser?.twitter?.subject,
       username: privyUser?.twitter?.username,
       pfp_url: privyUser?.twitter?.profilePictureUrl,
+      privyId: privyUser?.id,
       platform: 'TWITTER'
     })
   }

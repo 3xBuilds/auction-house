@@ -529,6 +529,7 @@ export default function BidPage() {
         body: JSON.stringify({
           bidAmount: bidAmount,
           socialId: user?.socialId,
+          privyId: user?.privyId || undefined,
         }),
       });
 
