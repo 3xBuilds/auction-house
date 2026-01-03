@@ -179,7 +179,7 @@ export default function CreateAuction() {
           currency: selectedCurrency?.symbol,
           startDate: now,
           hostedBy: user.socialId,
-          hostPrivyId: user.privyId || undefined,
+          // hostPrivyId: user.privyId || undefined,
           startingWallet: address,
           minimumBid: parseFloat(minBidAmount),
         }),

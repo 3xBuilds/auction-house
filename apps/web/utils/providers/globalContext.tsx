@@ -70,6 +70,7 @@ export const GlobalProvider = ({ children }: { children: React.ReactNode }) => {
 
 useEffect(() => {
   const createUser = async () => {
+    console.log('Checking if user creation is needed:', {privyUser, address});
     if(privyUser && privyUser.farcaster && !userCreatedRef.current){
       userCreatedRef.current = true;
       const accessToken = await getAccessToken();
