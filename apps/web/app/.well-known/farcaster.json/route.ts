@@ -1,6 +1,7 @@
 export async function GET(){
     try{
-        const response = await fetch('https://api.farcaster.xyz/miniapps/hosted-manifest/019a0f97-65c4-162f-d55f-34727e111e82');
+        const manifestLink = process.env.NEXT_PUBLIC_FARCASTER_MANIFEST_LINK || 'https://api.farcaster.xyz/miniapps/hosted-manifest/019a0f97-65c4-162f-d55f-34727e111e82';
+        const response = await fetch(manifestLink);
         const data = await response.json();
         
         // Add baseBuilder field
