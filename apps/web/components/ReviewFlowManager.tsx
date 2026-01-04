@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
 import { useWallets } from '@privy-io/react-auth';
 import { useGlobalContext } from '@/utils/providers/globalContext';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   Drawer,
   DrawerContent,
@@ -16,109 +17,79 @@ import {
 import { Button } from '@/components/UI/button';
 import ReviewForm from '@/components/ReviewForm';
 import toast from 'react-hot-toast';
+import { Package, Trophy, MessageSquare, User, CheckCircle } from 'lucide-react';
 
-interface Auction {
+interface PendingDelivery {
   _id: string;
-  auctionName: string;
-  endDate: string;
-  deliveredByHost: boolean;
-  hasReview: boolean;
-  winningBid?: {
+  auctionId: {
+    _id: string;
+    auctionName: string;
+    blockchainAuctionId: string;
+  };
+  hostId?: {
     _id: string;
     username?: string;
-    wallet?: string;
   };
+  winnerId?: {
+    _id: string;
+    username?: string;
+  };
+  delivered: boolean;
+  deliveredDate?: string;
 }
-
-const CUTOFF_DATE = new Date('2026-01-01T00:00:00Z');
 
 const ReviewFlowManager: React.FC = () => {
   const { authenticated, getAccessToken } = usePrivy();
   const { user } = useGlobalContext();
-  const { wallets } = useWallets();
-  const address = wallets.length > 0 ? wallets[0].address : null;
+  const router = useRouter();
+  const pathname = usePathname();
 
-  const [hostAuction, setHostAuction] = useState<Auction | null>(null);
-  const [winnerAuction, setWinnerAuction] = useState<Auction | null>(null);
+  const [asHost, setAsHost] = useState<PendingDelivery[]>([]);
+  const [asWinnerDelivered, setAsWinnerDelivered] = useState<PendingDelivery[]>([]);
+  const [asWinnerUndelivered, setAsWinnerUndelivered] = useState<PendingDelivery[]>([]);
   const [isHostDrawerOpen, setIsHostDrawerOpen] = useState(false);
   const [isWinnerDrawerOpen, setIsWinnerDrawerOpen] = useState(false);
-  const [isMarkingDelivered, setIsMarkingDelivered] = useState(false);
+  const [selectedReviewAuction, setSelectedReviewAuction] = useState<PendingDelivery | null>(null);
+  const [isMarkingDelivered, setIsMarkingDelivered] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (authenticated && user?.socialId && address) {
-      fetchAuctions();
+    if (authenticated && user?.socialId) {
+      console.log('Fetching pending deliveries for user:', user.socialId);
+      fetchPendingDeliveries();
     } else {
       setLoading(false);
     }
-  }, [authenticated, user?.socialId, address]);
+  }, [authenticated, user?.socialId]);
 
-  const fetchAuctions = async () => {
+  const fetchPendingDeliveries = async () => {
     try {
       const token = await getAccessToken();
       
-      // Fetch hosted and won auctions in parallel
-      const [hostedResponse, wonResponse] = await Promise.all([
-        fetch(`/api/protected/auctions/my-auctions?id=${user?.socialId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`/api/protected/auctions/won-bids?address=${address}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
+      const response = await fetch('/api/protected/reviews/pending-deliveries', {
+        headers: { Authorization: `Bearer ${token}`, "x-user-social-id": user?.socialId || "" },
+      });
 
-      if (hostedResponse.ok && wonResponse.ok) {
-        const hostedData = await hostedResponse.json();
-        const wonData = await wonResponse.json();
+      console.log('Pending deliveries response status:', response.status);
 
-        // Filter hosted auctions for delivery confirmation
-        const hostedToDeliver = hostedData.grouped?.ended?.find((auction: Auction) => {
-          const endDate = new Date(auction.endDate);
-          const auctionId = auction._id;
-          const dismissed = localStorage.getItem(`host-drawer-dismissed-${auctionId}`);
-          
-          return (
-            endDate > CUTOFF_DATE &&
-            !auction.deliveredByHost &&
-            !auction.hasReview &&
-            !dismissed
-          );
-        });
+      if (response.ok) {
+        const data = await response.json();
 
-        // Filter won auctions for review submission
-        const wonToReview = wonData.auctions?.find((auction: Auction) => {
-          const endDate = new Date(auction.endDate);
-          const auctionId = auction._id;
-          const dismissed = localStorage.getItem(`winner-drawer-dismissed-${auctionId}`);
-          
-          return (
-            endDate > CUTOFF_DATE &&
-            auction.deliveredByHost &&
-            !auction.hasReview &&
-            !dismissed
-          );
-        });
+        console.log('Pending deliveries fetched:', data);
 
-        // Show host drawer with priority
-        if (hostedToDeliver) {
-          setHostAuction(hostedToDeliver);
-          setIsHostDrawerOpen(true);
-        } else if (wonToReview) {
-          setWinnerAuction(wonToReview);
-          setIsWinnerDrawerOpen(true);
-        }
+        setAsHost(data.asHost || []);
+        setAsWinnerDelivered(data.asWinner?.delivered || []);
+        setAsWinnerUndelivered(data.asWinner?.undelivered || []);
       }
     } catch (error) {
-      console.error('Error fetching auctions for review flow:', error);
+      console.error('Error fetching pending deliveries:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleMarkAsDelivered = async () => {
-    if (!hostAuction) return;
-
-    setIsMarkingDelivered(true);
+  const handleMarkAsDelivered = async (auctionId: string) => {
+    setIsMarkingDelivered(auctionId);
     try {
       const token = await getAccessToken();
       const response = await fetch('/api/protected/reviews/mark-delivered', {
@@ -126,8 +97,9 @@ const ReviewFlowManager: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'x-user-social-id': user?.socialId || '',
         },
-        body: JSON.stringify({ auctionId: hostAuction._id }),
+        body: JSON.stringify({ auctionId }),
       });
 
       const data = await response.json();
@@ -136,104 +108,147 @@ const ReviewFlowManager: React.FC = () => {
         throw new Error(data.error || 'Failed to mark as delivered');
       }
 
-      toast.success('Auction marked as delivered! The winner can now leave a review.');
-      setIsHostDrawerOpen(false);
-      setHostAuction(null);
+      toast.success('Auction marked as delivered!');
       
-      // Refresh to check for winner auctions
-      fetchAuctions();
+      // Close drawer and refresh the list
+      setIsHostDrawerOpen(false);
+      fetchPendingDeliveries();
     } catch (error: any) {
       console.error('Error marking as delivered:', error);
       toast.error(error.message || 'Failed to mark as delivered');
     } finally {
-      setIsMarkingDelivered(false);
+      setIsMarkingDelivered(null);
     }
-  };
-
-  const handleHostDrawerDismiss = () => {
-    if (hostAuction) {
-      localStorage.setItem(`host-drawer-dismissed-${hostAuction._id}`, 'true');
-    }
-    setIsHostDrawerOpen(false);
-    setHostAuction(null);
-    
-    // Check if there's a winner auction to show
-    fetchAuctions();
-  };
-
-  const handleWinnerDrawerDismiss = () => {
-    if (winnerAuction) {
-      localStorage.setItem(`winner-drawer-dismissed-${winnerAuction._id}`, 'true');
-    }
-    setIsWinnerDrawerOpen(false);
-    setWinnerAuction(null);
   };
 
   const handleReviewSuccess = () => {
     toast.success('Thank you for your review!');
+    setSelectedReviewAuction(null);
     setIsWinnerDrawerOpen(false);
-    setWinnerAuction(null);
+    fetchPendingDeliveries();
   };
 
-  if (loading || !authenticated) {
+  const handleCloseHostDrawer = () => {
+    setIsHostDrawerOpen(false);
+  };
+
+  const handleCloseWinnerDrawer = () => {
+    setIsWinnerDrawerOpen(false);
+    setSelectedReviewAuction(null);
+  };
+
+  const totalWinnerCount = asWinnerDelivered.length + asWinnerUndelivered.length;
+  const showHostButton = asHost.length > 0;
+  const showWinnerButton = totalWinnerCount > 0;
+
+  if (loading || !authenticated || pathname !== '/') {
     return null;
   }
 
   return (
     <>
+      {/* Floating Action Buttons */}
+      <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-40">
+        {showHostButton && (
+          <button
+            onClick={() => setIsHostDrawerOpen(true)}
+            className="relative bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-200 group"
+            aria-label="Pending Deliveries"
+          >
+            <Package className="w-6 h-6" />
+            {asHost.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                {asHost.length}
+              </span>
+            )}
+            <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-black/80 text-white text-sm px-3 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              Pending Deliveries
+            </span>
+          </button>
+        )}
+
+        {showWinnerButton && (
+          <button
+            onClick={() => setIsWinnerDrawerOpen(true)}
+            className="relative bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-200 group"
+            aria-label="Won Auctions"
+          >
+            <Trophy className="w-6 h-6" />
+            {totalWinnerCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                {totalWinnerCount}
+              </span>
+            )}
+            <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-black/80 text-white text-sm px-3 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              Won Auctions
+            </span>
+          </button>
+        )}
+      </div>
+
       {/* Host Delivery Drawer */}
       <Drawer open={isHostDrawerOpen} onOpenChange={setIsHostDrawerOpen}>
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle className="text-center gradient-text text-2xl">
-              Auction Delivered?
+              Pending Deliveries
             </DrawerTitle>
             <DrawerDescription className="text-center text-white/70">
-              Confirm delivery to allow the winner to leave a review
+              Mark auctions as delivered to allow winners to leave reviews
             </DrawerDescription>
           </DrawerHeader>
           
-          {hostAuction && (
-            <div className="p-6 space-y-6">
-              <div className="bg-black/40 backdrop-blur-md border border-primary/20 rounded-xl p-4">
-                <p className="text-white/70 text-sm mb-2">Auction</p>
-                <p className="text-white font-semibold text-lg">{hostAuction.auctionName}</p>
-              </div>
+          <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+            {asHost.map((delivery) => (
+              <div 
+                key={delivery._id}
+                className="bg-black/40 backdrop-blur-md border border-primary/20 rounded-xl p-4 space-y-3"
+              >
+                <div>
+                  <p className="text-white/70 text-sm mb-1">Auction</p>
+                  <button
+                    onClick={() => router.push(`/bid/${delivery.auctionId.blockchainAuctionId}`)}
+                    className="text-white font-semibold text-lg hover:text-primary transition-colors text-left"
+                  >
+                    {delivery.auctionId.auctionName}
+                  </button>
+                </div>
 
-              <div className="bg-black/40 backdrop-blur-md border border-primary/20 rounded-xl p-4">
-                <p className="text-white/70 text-sm mb-2">Winner</p>
-                <p className="text-white font-semibold">
-                  {hostAuction.winningBid?.username || 
-                   (hostAuction.winningBid?.wallet 
-                     ? `${hostAuction.winningBid.wallet.slice(0, 6)}...${hostAuction.winningBid.wallet.slice(-4)}`
-                     : 'Unknown')}
-                </p>
-              </div>
+                <div>
+                  <p className="text-white/70 text-sm mb-1">Winner</p>
+                  <p className="text-white font-semibold">
+                    {delivery.winnerId?.username || 'Unknown'}
+                  </p>
+                </div>
 
-              <div className="bg-primary/10 border border-primary/30 rounded-lg p-4">
-                <p className="text-white/90 text-sm">
-                  Reach out to the winner to deliver the auction item. Once delivered, 
-                  mark it below to allow them to leave a review.
-                </p>
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    onClick={() => router.push(`/user/${delivery.winnerId?._id}`)}
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                  >
+                    <User className="w-4 h-4 mr-1" />
+                    Winner
+                  </Button>
+                  <Button
+                    onClick={() => handleMarkAsDelivered(delivery.auctionId._id)}
+                    disabled={isMarkingDelivered === delivery.auctionId._id}
+                    size="sm"
+                    className="flex-1"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    {isMarkingDelivered === delivery.auctionId._id ? 'Marking...' : 'Delivered'}
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
+            ))}
+          </div>
 
           <DrawerFooter>
-            <Button
-              onClick={handleMarkAsDelivered}
-              disabled={isMarkingDelivered}
-              className="w-full"
-            >
-              {isMarkingDelivered ? 'Marking...' : 'Mark as Delivered'}
-            </Button>
             <DrawerClose asChild>
-              <Button 
-                variant="outline" 
-                onClick={handleHostDrawerDismiss}
-                disabled={isMarkingDelivered}
-              >
-                Remind Me Later
+              <Button variant="outline" onClick={handleCloseHostDrawer}>
+                Close
               </Button>
             </DrawerClose>
           </DrawerFooter>
@@ -245,23 +260,121 @@ const ReviewFlowManager: React.FC = () => {
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle className="text-center gradient-text text-2xl">
-              Leave a Review
+              {selectedReviewAuction ? 'Leave a Review' : 'Your Won Auctions'}
             </DrawerTitle>
             <DrawerDescription className="text-center text-white/70">
-              Share your experience with this auction
+              {selectedReviewAuction 
+                ? 'Share your experience with this auction'
+                : 'Auctions you won'}
             </DrawerDescription>
           </DrawerHeader>
           
           <div className="p-6">
-            {winnerAuction && (
+            {selectedReviewAuction ? (
               <ReviewForm
-                auctionId={winnerAuction._id}
-                auctionName={winnerAuction.auctionName}
+                auctionId={selectedReviewAuction.auctionId._id}
+                auctionName={selectedReviewAuction.auctionId.auctionName}
                 onSuccess={handleReviewSuccess}
-                onCancel={handleWinnerDrawerDismiss}
+                onCancel={() => setSelectedReviewAuction(null)}
+                user={user}
               />
+            ) : (
+              <div className="space-y-6 max-h-[60vh] overflow-y-auto">
+                {/* Delivered - Ready for Review */}
+                {asWinnerDelivered.length > 0 && (
+                  <div>
+                    <h3 className="text-white font-semibold mb-3 text-lg">Ready for Review</h3>
+                    <div className="space-y-3">
+                      {asWinnerDelivered.map((delivery) => (
+                        <div 
+                          key={delivery._id}
+                          className="bg-black/40 backdrop-blur-md border border-primary/20 rounded-xl p-4 space-y-3"
+                        >
+                          <div>
+                            <p className="text-white/70 text-sm mb-1">Auction</p>
+                            <button
+                              onClick={() => router.push(`/bid/${delivery.auctionId.blockchainAuctionId}`)}
+                              className="text-white font-semibold text-lg hover:text-primary transition-colors text-left"
+                            >
+                              {delivery.auctionId.auctionName}
+                            </button>
+                          </div>
+
+                          <div>
+                            <p className="text-white/70 text-sm mb-1">Host</p>
+                            <p className="text-white font-semibold">
+                              {delivery.hostId?.username || 'Unknown'}
+                            </p>
+                          </div>
+
+                          <Button
+                            onClick={() => setSelectedReviewAuction(delivery)}
+                            size="sm"
+                            className="w-full"
+                          >
+                            <MessageSquare className="w-4 h-4 mr-1" />
+                            Leave Review
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Undelivered - Contact Host */}
+                {asWinnerUndelivered.length > 0 && (
+                  <div>
+                    <h3 className="text-white font-semibold mb-3 text-lg">Awaiting Delivery</h3>
+                    <div className="space-y-3">
+                      {asWinnerUndelivered.map((delivery) => (
+                        <div 
+                          key={delivery._id}
+                          className="bg-black/40 backdrop-blur-md border border-primary/20 rounded-xl p-4 space-y-3"
+                        >
+                          <div>
+                            <p className="text-white/70 text-sm mb-1">Auction</p>
+                            <button
+                              onClick={() => router.push(`/bid/${delivery.auctionId.blockchainAuctionId}`)}
+                              className="text-white font-semibold text-lg hover:text-primary transition-colors text-left"
+                            >
+                              {delivery.auctionId.auctionName}
+                            </button>
+                          </div>
+
+                          <div>
+                            <p className="text-white/70 text-sm mb-1">Host</p>
+                            <p className="text-white font-semibold">
+                              {delivery.hostId?.username || 'Unknown'}
+                            </p>
+                          </div>
+
+                          <Button
+                            onClick={() => router.push(`/user/${delivery.hostId?._id}`)}
+                            variant="outline"
+                            size="sm"
+                            className="w-full"
+                          >
+                            <User className="w-4 h-4 mr-1" />
+                            Contact Host
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
+
+          {!selectedReviewAuction && (
+            <DrawerFooter>
+              <DrawerClose asChild>
+                <Button variant="outline" onClick={handleCloseWinnerDrawer}>
+                  Close
+                </Button>
+              </DrawerClose>
+            </DrawerFooter>
+          )}
         </DrawerContent>
       </Drawer>
     </>

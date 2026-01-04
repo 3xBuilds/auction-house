@@ -14,6 +14,7 @@ interface ReviewFormProps {
   auctionName: string;
   onSuccess?: () => void;
   onCancel?: () => void;
+  user: any;
 }
 
 const ReviewForm: React.FC<ReviewFormProps> = ({
@@ -21,6 +22,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   auctionName,
   onSuccess,
   onCancel,
+  user
 }) => {
   const [rating, setRating] = useState<number>(0);
   const [comment, setComment] = useState<string>('');
@@ -49,6 +51,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
+          'x-user-social-id': user?.socialId, // Add social ID header if needed
         },
         body: JSON.stringify({
           auctionId,

@@ -3,6 +3,7 @@ import dbConnect from '@/utils/db';
 import Auction from '@/utils/schemas/Auction';
 import Review from '@/utils/schemas/Review';
 import User from '@/utils/schemas/User';
+import PendingDelivery from '@/utils/schemas/PendingDelivery';
 import { authenticateRequest } from '@/utils/authService';
 
 export async function POST(req: NextRequest) {
@@ -30,7 +31,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Comment cannot exceed 500 characters' }, { status: 400 });
     }
 
+    // @ts-ignore
+    const socialId = req.headers.get('x-user-social-id');
+
+    if (!socialId) {
+      return NextResponse.json(
+        { error: 'Social ID not found in session' },
+        { status: 400 }
+      );
+    }
+
     await dbConnect();
+
+    // Find the pending delivery
+    const pendingDelivery = await PendingDelivery.findOne({ auctionId });
+    
+    if (!pendingDelivery) {
+      return NextResponse.json({ error: 'Pending delivery not found' }, { status: 404 });
+    }
+
+    // Verify the requesting user is the winner
+    if (pendingDelivery.winnerSocialId !== socialId) {
+      return NextResponse.json({ error: 'Only the auction winner can leave a review' }, { status: 403 });
+    }
+
+    // Verify the auction has been marked as delivered
+    if (!pendingDelivery.delivered) {
+      return NextResponse.json({ error: 'Host must mark the auction as delivered before you can review' }, { status: 400 });
+    }
 
     // Find the auction
     const auction = await Auction.findById(auctionId);
@@ -41,16 +69,6 @@ export async function POST(req: NextRequest) {
     // Verify the auction has ended
     if (auction.status !== 'ended') {
       return NextResponse.json({ error: 'Can only review ended auctions' }, { status: 400 });
-    }
-
-    // Verify there is a winner
-    if (!auction.winningBid || auction.winningBid === 'no_bids') {
-      return NextResponse.json({ error: 'Cannot review - no winner for this auction' }, { status: 400 });
-    }
-
-    // Verify the host has marked as delivered
-    if (!auction.deliveredByHost) {
-      return NextResponse.json({ error: 'Host must mark the auction as delivered before you can review' }, { status: 400 });
     }
 
     // Check if review already exists
