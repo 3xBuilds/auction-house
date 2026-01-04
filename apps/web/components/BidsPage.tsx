@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Heading from "./UI/Heading";
+import RatingCircle from "./UI/RatingCircle";
 import ScrollingName from "./utils/ScrollingName";
 import {
   auctionAbi,
@@ -84,6 +85,8 @@ interface AuctionData {
     pfp_url?: string;
     fid?: string;
     wallet?: string;
+    averageRating?: number;
+    totalReviews?: number;
   };
 }
 
@@ -526,6 +529,7 @@ export default function BidPage() {
         body: JSON.stringify({
           bidAmount: bidAmount,
           socialId: user?.socialId,
+          // privyId: user?.privyId || undefined,
         }),
       });
 
@@ -1115,6 +1119,14 @@ export default function BidPage() {
                     {auctionData.hostedBy.display_name ||
                       auctionData.hostedBy.username}
                   </span>
+                )}
+                {auctionData.hostedBy.averageRating && auctionData.hostedBy.averageRating > 0 && (
+                  <RatingCircle
+                    rating={auctionData.hostedBy.averageRating}
+                    totalReviews={auctionData.hostedBy.totalReviews || 0}
+                    size="sm"
+                    showLabel={false}
+                  />
                 )}
               </div>
             </div>

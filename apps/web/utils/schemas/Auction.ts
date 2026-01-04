@@ -107,6 +107,19 @@ const AuctionSchema: Schema = new Schema(
       type: Boolean,
       default: true,
     },
+    deliveredByHost: {
+      type: Boolean,
+      default: false,
+    },
+    hasReview: {
+      type: Boolean,
+      default: false,
+    },
+    rating:{
+      type: Schema.Types.ObjectId,
+      ref: 'Review',
+      default: null,
+    },
     winningBid: {
       type: Schema.Types.Mixed,
       default: null,

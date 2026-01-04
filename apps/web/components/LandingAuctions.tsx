@@ -14,6 +14,7 @@ import {
   DrawerTrigger,
 } from "./UI/Drawer";
 import { useNavigateWithLoader } from "@/utils/useNavigateWithLoader";
+import RatingCircle from "./UI/RatingCircle";
 import toast from "react-hot-toast";
 import { useAccount, useSendCalls, useReadContract } from "wagmi";
 import { useMiniKit } from "@coinbase/onchainkit/minikit";
@@ -63,6 +64,8 @@ interface HostInfo {
   display_name?: string;
   socialId?: string;
   pfp_url?: string;
+  averageRating?: number;
+  totalReviews?: number;
 }
 
 interface Auction {
@@ -169,6 +172,8 @@ const LandingAuctions: React.FC = () => {
         `/api/auctions/getTopFive?page=${pageNum}&limit=3&currency=${currencyFilter}`
       );
       const data: ApiResponse = await response.json();
+
+      console.log("Fetched auctions data:", data);
 
       if (data.success) {
         if (append) {
@@ -354,6 +359,7 @@ const LandingAuctions: React.FC = () => {
         body: JSON.stringify({
           bidAmount: bidAmount,
           socialId: user?.socialId,
+          // privyId: user?.privyId || undefined,
         }),
       });
 
@@ -1382,7 +1388,7 @@ const LandingAuctions: React.FC = () => {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-caption">Hosted by:</span>
                     <div
-                      className="flex items-center gap-2 text-primary hover:text-primary cursor-pointer font-bold transition-colors duration-200"
+                      className="flex items-center gap-2 text-primary hover:text-primary cursor-pointer font-bold transition-colors duration-200 justify-center"
                       onClick={() =>
                         navigate(`/user/${auction.hostedBy._id}`)
                       }
@@ -1406,7 +1412,7 @@ const LandingAuctions: React.FC = () => {
                               : auction.hostedBy.socialId)}
                         </span>
                       </div>
-                      <div className="lg:hidden">
+                      <div className="lg:hidden flex ">
                         <ScrollingName 
                           name={auction.hostedBy.display_name ||
                             (auction.hostedBy.username
@@ -1414,7 +1420,18 @@ const LandingAuctions: React.FC = () => {
                               : auction.hostedBy.socialId) as string}
                           className="max-w-40"
                         />
+                        
                       </div>
+
+                      {(auction.hostedBy.averageRating ?? 0) > 0 && (auction.hostedBy.totalReviews ?? 0) > 0 && (
+                        <RatingCircle
+                          rating={auction.hostedBy.averageRating}
+                          totalReviews={auction.hostedBy.totalReviews}
+                          size="sm"
+                          showLabel={false}
+                        />
+                      )}
+
                     </div>
                   </div>
                 </div>
