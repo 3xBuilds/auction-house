@@ -35,9 +35,14 @@ interface Review {
   comment?: string;
   createdAt: string;
   reviewer: {
+    _id: string;
     username?: string;
     display_name?: string;
     pfp_url?: string | null;
+    twitterProfile?: {
+      username: string;
+      profileImageUrl?: string;
+    };
   };
   auction: {
     auctionName: string;
@@ -169,10 +174,10 @@ export default function UserPage() {
 
         {/* User Header */}
         <div className="bg-white/10 rounded-lg shadow-md lg:p-4 p-2 mb-8 border border-white/10">
-          <div className="flex items-center gap-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex lg:justify-between mb-4 max-lg:flex-col items-center justify-between gap-2">
-                <div>
+          <div className="flex items-center gap-4 w-full">
+            <div className="flex-1 min-w-0 w-full">
+              <div className="w-full flex lg:justify-start mb-4 max-lg:flex-col items-center justify-start gap-2">
+                <div className="w-full">
                     <div className="flex items-center gap-2">
                         {/* Profile Picture */}
                 {userData.user.pfp_url && (
@@ -202,7 +207,7 @@ export default function UserPage() {
                     
                     </div>
                     {userData.user.bio && (
-                <p className="text-white/80 text-sm my-3 line-clamp-2">{userData.user.bio}</p>
+                <p className="text-white/80 text-sm my-3 line-clamp-2 max-lg:text-center">{userData.user.bio}</p>
               )}
               <div className='flex gap-2 w-full items-center justify-center lg:justify-start'>
                 {userData.user.x_username && userData.user.platform == "FARCASTER" && (
@@ -256,9 +261,9 @@ export default function UserPage() {
                   )}
                 </div>
                 
-                <div className="flex flex-col items-between">
-                  <p className="text-caption text-xs">Total Auctions</p>
-                  <p className="text-2xl font-bold text-primary w-full lg:text-right text-center">
+                <div className="flex items-center justify-between mt-4 w-full">
+                  <p className="text-caption text-md">Hosted</p>
+                  <p className="text-2xl font-bold text-primary w-full lg:text-right text-right">
                     {userData.activeAuctions.length + userData.endedAuctions.length}
                   </p>
                 </div>
@@ -287,7 +292,7 @@ export default function UserPage() {
                 : "text-caption hover:text-foreground"
             }`}
           >
-            Active Auctions
+            Active
           </button>
           <button
             onClick={() => setActiveTab("ended")}
@@ -297,7 +302,7 @@ export default function UserPage() {
                 : "text-caption hover:text-foreground"
             }`}
           >
-            Ended Auctions
+            Ended
           </button>
         </div>
 
@@ -323,11 +328,14 @@ export default function UserPage() {
                     key={review._id}
                     rating={review.rating}
                     comment={review.comment}
+                    reviewerId={review.reviewer._id}
                     reviewerName={
                       review.reviewer.display_name ||
                       (review.reviewer.username ? `@${review.reviewer.username}` : "Anonymous")
                     }
-                    reviewerPfp={review.reviewer.pfp_url}
+                    reviewerPfp={review.reviewer.twitterProfile?.profileImageUrl ||
+                    review.reviewer.pfp_url ||
+                    null}
                     auctionName={review.auction.auctionName}
                     createdAt={review.createdAt}
                   />

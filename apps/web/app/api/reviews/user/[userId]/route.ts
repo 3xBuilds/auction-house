@@ -16,7 +16,7 @@ export async function GET(
     await dbConnect();
 
     // Get user to fetch their rating stats
-    const user = await User.findOne({socialId: userId}).select('averageRating totalReviews username twitterProfile');
+    const user = await User.findById(userId).select('averageRating totalReviews username twitterProfile');
     
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -24,8 +24,8 @@ export async function GET(
 
     // Get all reviews for this user (as reviewee/host)
     const reviews = await Review.find({ reviewee: user._id })
-      .populate('reviewer', 'username twitterProfile wallets')
-      .populate('auction', 'auctionName endDate blockchainAuctionId')
+      .populate('reviewer', 'username pfp_url twitterProfile wallets')
+      .populate('auction', 'auctionName endDate blockchainAuctionId bidders')
       .sort({ createdAt: -1 }); // Most recent first
 
     return NextResponse.json({ 

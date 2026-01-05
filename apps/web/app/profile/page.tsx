@@ -11,6 +11,29 @@ import { useNavigateWithLoader } from '@/utils/useNavigateWithLoader'
 import { useState, useEffect } from 'react'
 import TwitterAuthModal from '@/components/UI/TwitterAuthModal'
 import { useMiniKit } from '@coinbase/onchainkit/minikit'
+import ReviewCard from '@/components/UI/ReviewCard'
+
+interface Review {
+  _id: string
+  rating: number
+  comment?: string
+  reviewer: {
+    _id: string
+    username?: string
+    pfp_url?: string
+    twitterProfile?: {
+      username: string
+      profileImageUrl?: string
+    }
+    wallets: string[]
+  }
+  auction: {
+    _id: string
+    auctionName: string
+    blockchainAuctionId: string
+  }
+  createdAt: string
+}
 
 interface UserProfile {
   _id: string
@@ -50,6 +73,7 @@ export default function ProfilePage() {
   const navigateWithLoader = useNavigateWithLoader()
   const [profileData, setProfileData] = useState<UserProfile | null>(null)
   const [statistics, setStatistics] = useState<ProfileStatistics | null>(null)
+  const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
   const [showTwitterModal, setShowTwitterModal] = useState(false)
 
@@ -79,6 +103,13 @@ export default function ProfilePage() {
           console.log('Profile data received:', data.user)
           setProfileData(data.user)
           setStatistics(data.statistics)
+          
+          // Fetch reviews
+          const reviewsResponse = await fetch(`/api/reviews/user/${data.user._id}`)
+          const reviewsData = await reviewsResponse.json()
+          if (reviewsData.success) {
+            setReviews(reviewsData.reviews)
+          }
         }
       } catch (error) {
         console.error('Error fetching profile data:', error)
@@ -191,6 +222,35 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* Reviews Section */}
+        {reviews.length > 0 && (
+          <div className="bg-black/50 rounded-xl border border-primary/20 p-6 my-6">
+            <h2 className="text-xl font-bold text-white mb-4">Reviews ({reviews.length})</h2>
+            <div className="space-y-4">
+              {reviews.map((review) => (
+                <ReviewCard
+                  key={review._id}
+                  rating={review.rating}
+                  comment={review.comment}
+                  reviewerId={review.reviewer._id}
+                  reviewerName={
+                    review.reviewer.twitterProfile?.username || 
+                    review.reviewer.username || 
+                    `${review.reviewer.wallets[0]?.slice(0, 6)}...${review.reviewer.wallets[0]?.slice(-4)}`
+                  }
+                  reviewerPfp={
+                    review.reviewer.twitterProfile?.profileImageUrl ||
+                    review.reviewer.pfp_url ||
+                    null
+                  }
+                  auctionName={review.auction.auctionName}
+                  createdAt={review.createdAt}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <button
@@ -247,8 +307,8 @@ export default function ProfilePage() {
             </div> */}
           </div>
         </div>
-        
-        <TwitterAuthModal 
+                
+                <TwitterAuthModal 
           isOpen={showTwitterModal}
           onClose={() => setShowTwitterModal(false)}
           onSuccess={() => {
