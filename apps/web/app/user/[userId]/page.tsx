@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { RiLoader5Fill, RiArrowLeftLine, RiUserLine } from "react-icons/ri";
 import Heading from "@/components/UI/Heading";
 import UserAuctions from "@/components/UserAuctions";
-// import ReviewList from "@/components/ReviewList";
+import ReviewCard from "@/components/UI/ReviewCard";
 import RatingCircle from "@/components/UI/RatingCircle";
 import { useMiniKit } from "@coinbase/onchainkit/minikit";
 import { sdk } from "@farcaster/miniapp-sdk";
@@ -29,6 +29,21 @@ interface UserData {
   endedAuctions: any[];
 }
 
+interface Review {
+  _id: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+  reviewer: {
+    username?: string;
+    display_name?: string;
+    pfp_url?: string | null;
+  };
+  auction: {
+    auctionName: string;
+  };
+}
+
 export default function UserPage() {
   const params = useParams();
   const router = useRouter();
@@ -37,6 +52,9 @@ export default function UserPage() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"reviews" | "active" | "ended">("reviews");
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
 
   const { context } = useMiniKit();
 
@@ -78,6 +96,28 @@ export default function UserPage() {
       fetchUserData();
     }
   }, [userId]);
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (!userId || activeTab !== "reviews") return;
+      
+      try {
+        setReviewsLoading(true);
+        const response = await fetch(`/api/reviews/user/${userId}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          setReviews(data.reviews || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch reviews:", err);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+
+    fetchReviews();
+  }, [userId, activeTab]);
 
   if (loading) {
     return (
@@ -214,65 +254,102 @@ export default function UserPage() {
                       Profile
                     </button>
                   )}
-                  {/* <div className="flex gap-2 w-full items-center justify-center">
-                    {userData.user.x_username && (
-                      <div className="">
-                        <a
-                          href={`https://x.com/${userData.user.x_username}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 text-xs bg-white/10 border border-white/20 rounded-md p-2 text-white font-bold transition-colors"
-                        >
-                          @{userData.user.x_username}
-                          <svg
-                            className="w-3 h-3"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                            />
-                          </svg>
-                        </a>
-                      </div>
-                    )}
-                    {context && userData.user.fid && (
-                      <button
-                        onClick={handleViewProfile}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-primary/20 border border-primary/30 text-primary rounded-lg hover:bg-primary/30 transition-colors text-sm font-medium"
-                      >
-                        <RiUserLine className="text-sm" />
-                        Profile
-                      </button>
-                    )}
-                  </div> */}
                 </div>
-                {/* <div className="lg:text-right text-center flex flex-col items-center gap-2"> */}
-                  {/* View Profile Button - only show if context is available and user has fid */}
-
-                {/* </div> */}
+                
+                <div className="flex flex-col items-between">
+                  <p className="text-caption text-xs">Total Auctions</p>
+                  <p className="text-2xl font-bold text-primary w-full lg:text-right text-center">
+                    {userData.activeAuctions.length + userData.endedAuctions.length}
+                  </p>
+                </div>
               </div>
-
-              <div className="flex flex-col items-between">
-                    <p className="text-caption text-xs">Total Auctions</p>
-                    <p className="text-2xl font-bold text-primary w-full lg:text-right text-center">
-                      {userData.activeAuctions.length +
-                        userData.endedAuctions.length}
-                    </p>
-                  </div>
             </div>
           </div>
         </div>
 
-        {/* Auctions */}
-        <UserAuctions
-          activeAuctions={userData.activeAuctions}
-          endedAuctions={userData.endedAuctions}
-        />
+        {/* Toggle Buttons */}
+        <div className="flex mb-6 overflow-x-hidden gap-2">
+          <button
+            onClick={() => setActiveTab("reviews")}
+            className={`px-4 py-2 font-medium transition-colors capitalize whitespace-nowrap shrink-0 ${
+              activeTab === "reviews"
+                ? "text-primary border-b-2 border-primary bg-white/5 rounded-md"
+                : "text-caption hover:text-foreground"
+            }`}
+          >
+            Reviews
+          </button>
+          <button
+            onClick={() => setActiveTab("active")}
+            className={`px-4 py-2 font-medium transition-colors capitalize whitespace-nowrap shrink-0 ${
+              activeTab === "active"
+                ? "text-primary border-b-2 border-primary bg-white/5 rounded-md"
+                : "text-caption hover:text-foreground"
+            }`}
+          >
+            Active Auctions
+          </button>
+          <button
+            onClick={() => setActiveTab("ended")}
+            className={`px-4 py-2 font-medium transition-colors capitalize whitespace-nowrap shrink-0 ${
+              activeTab === "ended"
+                ? "text-primary border-b-2 border-primary bg-white/5 rounded-md"
+                : "text-caption hover:text-foreground"
+            }`}
+          >
+            Ended Auctions
+          </button>
+        </div>
+
+        {/* Content based on active tab */}
+        {activeTab === "reviews" && (
+          <div>
+            <h2 className="text-xl font-bold text-white mb-4">
+              Reviews ({reviews.length})
+            </h2>
+            {reviewsLoading ? (
+              <div className="bg-white/5 rounded-lg p-8 text-center">
+                <RiLoader5Fill className="text-primary animate-spin text-3xl mx-auto" />
+                <p className="mt-4 text-caption">Loading reviews...</p>
+              </div>
+            ) : reviews.length === 0 ? (
+              <div className="bg-white/5 rounded-lg p-8 text-center">
+                <p className="text-caption">No reviews yet</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                {reviews.map((review) => (
+                  <ReviewCard
+                    key={review._id}
+                    rating={review.rating}
+                    comment={review.comment}
+                    reviewerName={
+                      review.reviewer.display_name ||
+                      (review.reviewer.username ? `@${review.reviewer.username}` : "Anonymous")
+                    }
+                    reviewerPfp={review.reviewer.pfp_url}
+                    auctionName={review.auction.auctionName}
+                    createdAt={review.createdAt}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "active" && (
+          <UserAuctions
+            activeAuctions={userData.activeAuctions}
+            endedAuctions={[]}
+          />
+        )}
+
+        {activeTab === "ended" && (
+          <UserAuctions
+            activeAuctions={[]}
+            endedAuctions={userData.endedAuctions}
+          />
+        )}
       </div>
     </div>
     </div>
