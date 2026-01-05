@@ -1364,7 +1364,7 @@ export default function BidPage() {
                     </div>
 
                     <div className="lg:text-right text-center">
-                      <p className="font-bold lg:text-lg text-md">
+                      <p className="font-bold lg:text-lg text-sm">
                         {formatBidAmount(
                           bidder.bidAmount,
                           auctionData.currency
