@@ -1035,7 +1035,7 @@ const LandingAuctions: React.FC = () => {
   );
 
   return (
-    <div className="w-full max-lg:mx-auto mt-2">
+    <div className="w-full max-lg:mx-auto mt-2 pb-24">
       <div className="flex flex-col items-start justify-between mb-8">
         <h2 className="text-2xl font-bold gradient-text">Latest Auctions</h2>
         <p className="text-caption text-sm mt-2">
@@ -1478,7 +1478,7 @@ const LandingAuctions: React.FC = () => {
         )}
 
         {/* Debug info and manual load more */}
-        {process.env.NEXT_PUBLIC_ENV === "DEV" && (
+        {/* {process.env.NEXT_PUBLIC_ENV === "DEV" && (
           <div className="mt-4 p-4 bg-gray-800 rounded">
             <p>
               Debug: hasMore={String(hasMore)}, loadingMore={String(loadingMore)},
@@ -1495,7 +1495,7 @@ const LandingAuctions: React.FC = () => {
               </Button>
             )}
           </div>
-        )}
+        )} */}
 
         {/* Click outside to close share dropdown */}
         {shareDropdownOpen && (
@@ -1634,8 +1634,8 @@ const LandingAuctions: React.FC = () => {
       </Drawer>
       </div>
       )}
+      
 
-      {/* Show all auctions link */}
     </div>
   );
 };

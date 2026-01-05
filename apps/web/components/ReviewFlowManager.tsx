@@ -148,11 +148,11 @@ const ReviewFlowManager: React.FC = () => {
   return (
     <>
       {/* Floating Action Buttons */}
-      <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-40">
+      <div className="fixed bottom-4 right-4 flex gap-3 z-40 rounded-lg bg-black p-4">
         {showHostButton && (
           <button
             onClick={() => setIsHostDrawerOpen(true)}
-            className="relative bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-200 group"
+            className="relative flex text-sm font-bold items-center gap-2 bg-linear-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white rounded-lg px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-200 group"
             aria-label="Pending Deliveries"
           >
             <Package className="w-6 h-6" />
@@ -161,16 +161,14 @@ const ReviewFlowManager: React.FC = () => {
                 {asHost.length}
               </span>
             )}
-            <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-black/80 text-white text-sm px-3 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              Pending Deliveries
-            </span>
+            
           </button>
         )}
 
         {showWinnerButton && (
           <button
             onClick={() => setIsWinnerDrawerOpen(true)}
-            className="relative bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-200 group"
+            className="relative flex text-sm font-bold items-center gap-2 bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-200 group"
             aria-label="Won Auctions"
           >
             <Trophy className="w-6 h-6" />
@@ -179,9 +177,7 @@ const ReviewFlowManager: React.FC = () => {
                 {totalWinnerCount}
               </span>
             )}
-            <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-black/80 text-white text-sm px-3 py-1 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              Won Auctions
-            </span>
+            
           </button>
         )}
       </div>
