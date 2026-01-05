@@ -148,7 +148,7 @@ const ReviewFlowManager: React.FC = () => {
   return (
     <>
       {/* Floating Action Buttons */}
-      <div className="fixed bottom-4 right-4 flex gap-3 z-40 rounded-lg bg-black p-4">
+      <div className={`fixed bottom-4 right-4 flex gap-3 z-40 rounded-lg bg-black ${showHostButton || showWinnerButton ? 'p-3' : ''}`}>
         {showHostButton && (
           <button
             onClick={() => setIsHostDrawerOpen(true)}
