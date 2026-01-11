@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { usePrivy, useWallets } from '@privy-io/react-auth'
-import PageLayout from "@/components/UI/PageLayout"
-import Heading from "@/components/UI/Heading"
-import { RiQrScanLine, RiTrophyLine, RiCheckLine } from "react-icons/ri"
+import { DollarSign, TrendingUp, Award, CheckCircle, Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface WeeklyReward {
   _id: string;
@@ -137,252 +136,349 @@ export default function EarnPage() {
   const claimedRewards = weeklyRewards.filter(r => r.claimed);
   const currentWeekRewards = weeklyRewards.filter(r => !isWeekEnded(r.weekEndDate));
 
+  const totalEarned = claimedRewards.reduce((sum, w) => sum + w.rewardAmount, 0);
+  const totalPending = unclaimedRewards.reduce((sum, w) => sum + w.rewardAmount, 0);
+
   if (!authenticated || !address) {
     return (
-      <PageLayout className="min-h-screen flex flex-col items-start justify-start">
-        <div className="w-full max-w-6xl max-lg:mx-auto mt-8">
-          <div className="bg-white/10 rounded-lg shadow-md border border-gray-700 p-8 text-center">
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-16 h-16 gradient-button rounded-full flex items-center justify-center">
-                <RiTrophyLine className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Connect Wallet to Earn</h3>
-                <p className="text-caption">
-                  Please connect your wallet to view and claim your weekly bidding rewards.
-                </p>
-              </div>
-            </div>
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="max-w-md w-full p-8 rounded-xl bg-white/5 border border-white/10 text-center">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center mx-auto mb-4">
+            <DollarSign className="w-8 h-8 text-purple-400" />
           </div>
+          <h2 className="text-2xl mb-2">Connect Your Wallet</h2>
+          <p className="text-gray-400 mb-6">
+            You need to connect your wallet to view your earnings
+          </p>
         </div>
-      </PageLayout>
+      </div>
     );
   }
 
   return (
-    <PageLayout className="min-h-screen flex flex-col items-start justify-start">
-      <div className="w-full max-lg:mx-auto">
-        <div className="flex flex-col justify-center mb-8 max-lg:mb-4">
-      
-            <Heading size="lg">Weekly Rewards</Heading>
-            
+    <div className="min-h-screen py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl mb-2">Earn Rewards</h1>
+          <p className="text-gray-400">Get rewarded for participating in auctions</p>
         </div>
 
-        {loading ? (
-          <div className="bg-white/10 rounded-lg shadow-md border border-gray-700 p-8 text-center w-full">
-            <p className="text-caption">Loading your rewards...</p>
-          </div>
-        ) : weeklyRewards.length === 0 ? (
-          <div className="bg-white/10 rounded-lg shadow-md border border-gray-700 p-8 text-center w-full">
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-16 h-16 gradient-button rounded-full flex items-center justify-center">
-                <RiQrScanLine className="w-8 h-8 text-white" />
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="p-6 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20"
+          >
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-purple-400" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold mb-2">No Rewards Yet</h3>
-                <p className="text-caption mb-4">
-                  Start bidding on auctions to earn weekly rewards!
+                <p className="text-sm text-gray-400">Total Earned</p>
+                <p className="text-2xl">${formatNumber(totalEarned)}</p>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.1 }}
+            className="p-6 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20"
+          >
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-green-400" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-400">Pending Rewards</p>
+                <p className="text-2xl">${formatNumber(totalPending)}</p>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+            className="p-6 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20"
+          >
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                <Award className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-400">Weeks Participated</p>
+                <p className="text-2xl">{weeklyRewards.length}</p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* How it Works */}
+        <div className="p-6 rounded-xl bg-white/5 border border-white/10 mb-12">
+          <h2 className="text-2xl mb-4">How Earning Works</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+                <span className="text-purple-400">1</span>
+              </div>
+              <div>
+                <h3 className="text-lg mb-1">Participate in Auctions</h3>
+                <p className="text-sm text-gray-400">
+                  Place bids on auctions throughout the week to earn points
                 </p>
-                <p className="text-sm text-caption">
-                  Bid at least $10 USD on other users' auctions each week to qualify for rewards.
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+                <span className="text-purple-400">2</span>
+              </div>
+              <div>
+                <h3 className="text-lg mb-1">Weekly Rewards</h3>
+                <p className="text-sm text-gray-400">
+                  Earn 1% of your total spending each week as rewards
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+                <span className="text-purple-400">3</span>
+              </div>
+              <div>
+                <h3 className="text-lg mb-1">Claim Rewards</h3>
+                <p className="text-sm text-gray-400">
+                  Claim your rewards at the end of each week
                 </p>
               </div>
             </div>
           </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Unclaimed Rewards */}
-            {unclaimedRewards.length > 0 && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <span className="text-primary">💰</span> Claimable Rewards
-                </h2>
-                <div className="space-y-3">
-                  {unclaimedRewards.map((reward) => (
-                    <div
-                      key={reward._id}
-                      className="bg-white/10 rounded-lg shadow-md border border-primary/50 p-6"
-                    >
-                      <div className="flex items-center justify-between flex-wrap gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="text-lg font-semibold">{reward.weekLabel}</h3>
-                            <span className="px-2 py-1 bg-primary/20 text-primary text-xs rounded-full">
-                              Ready to Claim
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap gap-4 text-sm text-caption">
-                            <span>Total Spent: ${formatNumber(reward.totalSpentUSD)}</span>
-                            <span>•</span>
-                            <span>{reward.bidCount} Bids</span>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleClaim(reward._id)}
-                          disabled={claiming === reward._id}
-                          className="gradient-button px-6 py-2 rounded-lg font-semibold text-white hover:opacity-90 transition-opacity disabled:opacity-50"
-                        >
-                          {claiming === reward._id ? 'Claiming...' : 'Claim Reward'}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+        </div>
 
-            {/* Current Week Progress */}
-            {currentWeekRewards.length > 0 && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <span>📅</span> Current Week Progress
-                </h2>
-                <div className="space-y-3">
-                  {currentWeekRewards.map((reward) => (
-                    <div
-                      key={reward._id}
-                      className="bg-white/10 rounded-lg shadow-md border border-gray-700 p-6"
-                    >
-                      <div className="flex items-center justify-between flex-wrap gap-4">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-semibold mb-2">{reward.weekLabel}</h3>
-                          <div className="flex flex-wrap gap-4 text-sm text-caption">
-                            <span>Total Spent: ${formatNumber(reward.totalSpentUSD)}</span>
-                            <span>•</span>
-                            <span>{reward.bidCount} Bids</span>
-                          </div>
-                        </div>
-                        <span className="px-4 py-2 bg-gray-700 text-caption rounded-lg text-sm">
-                          In Progress
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+        </div>
 
-            {/* Claimed Rewards */}
-            {claimedRewards.length > 0 && (
-              <div>
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <span>✅</span> Claimed Rewards
-                </h2>
-                <div className="space-y-3">
-                  {claimedRewards.map((reward) => (
-                    <div
-                      key={reward._id}
-                      className="bg-white/5 rounded-lg shadow-md border border-gray-700 p-6 opacity-75"
-                    >
-                      <div className="flex items-center justify-between flex-wrap gap-4">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-semibold mb-2">{reward.weekLabel}</h3>
-                          <div className="flex flex-wrap gap-4 text-sm text-caption">
-                            <span>Total Spent: ${formatNumber(reward.totalSpentUSD)}</span>
-                            <span>•</span>
-                            <span>{reward.bidCount} Bids</span>
-                            {reward.rewardAmount > 0 && (
-                              <>
-                                <span>•</span>
-                                <span className="text-green-500 font-semibold">
-                                  Earned: ${formatNumber(reward.rewardAmount)}
-                                </span>
-                              </>
-                            )}
-                          </div>
+        {/* Weekly Rewards */}
+        <div className="mb-8">
+          <h2 className="text-2xl mb-6">Your Weekly Rewards</h2>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+            </div>
+          ) : weeklyRewards.length === 0 ? (
+            <div className="p-8 rounded-xl bg-white/5 border border-white/10 text-center">
+              <p className="text-gray-400">No rewards yet. Start bidding to earn!</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Unclaimed Rewards */}
+              {unclaimedRewards.map((week, index) => (
+                <motion.div
+                  key={week._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  className="p-6 rounded-xl bg-white/5 border border-purple-500/50 hover:border-purple-500 transition-all"
+                >
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <h3 className="text-lg">
+                          {week.weekLabel} - Week of {new Date(week.weekStartDate).toLocaleDateString()} - {new Date(week.weekEndDate).toLocaleDateString()}
+                        </h3>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-400 mb-1">Total Spent</p>
+                          <p className="">${formatNumber(week.totalSpentUSD)}</p>
                         </div>
-                        <div className="flex items-center gap-2 text-green-500">
-                          <RiCheckLine className="w-5 h-5" />
-                          <span className="text-sm font-medium">Claimed</span>
+                        <div>
+                          <p className="text-gray-400 mb-1">Bids Placed</p>
+                          <p className="">{week.bidCount}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400 mb-1">Reward</p>
+                          <p className="text-green-400">${formatNumber(week.rewardAmount)}</p>
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Weekly Leaderboard */}
-            <div>
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <span>📅</span> Weekly Top Bidders Leaderboard
-              </h2>
-              {loadingLeaderboard ? (
-                <div className="bg-white/10 rounded-lg shadow-md border border-gray-700 p-8 text-center">
-                  <p className="text-caption">Loading leaderboard...</p>
-                </div>
-              ) : weeklyBidders.length === 0 ? (
-                <div className="bg-white/10 rounded-lg shadow-md border border-gray-700 p-8 text-center">
-                  <p className="text-caption">No qualifying bids this week (minimum $10 USD)</p>
-                </div>
-              ) : (
-                <div className="bg-white/10 rounded-lg shadow-md border border-gray-700 overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-white/5">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-caption uppercase tracking-wider">
-                            Rank
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-caption uppercase tracking-wider">
-                            User
-                          </th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-caption uppercase tracking-wider">
-                            Total Spent ($)
-                          </th>
-                          <th className="px-6 py-3 text-right text-xs font-medium text-caption uppercase tracking-wider">
-                            Bids
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-700">
-                        {weeklyBidders.map((bidder, index) => (
-                          <tr key={bidder._id} className="hover:bg-white/5 transition-colors">
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                {index === 0 && <span className="text-2xl">🥇</span>}
-                                {index === 1 && <span className="text-2xl">🥈</span>}
-                                {index === 2 && <span className="text-2xl">🥉</span>}
-                                {index > 2 && <span className="text-caption font-medium">#{index + 1}</span>}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center gap-3 min-w-0">
-                                {bidder.pfp_url && (
-                                  <img
-                                    src={bidder.pfp_url}
-                                    alt={bidder.display_name || bidder.username || 'User'}
-                                    className="w-8 h-8 rounded-full flex-shrink-0"
-                                  />
-                                )}
-                                <div className="min-w-0">
-                                  <div className="font-medium truncate">
-                                    {bidder.display_name || bidder.username || formatWallet(bidder.wallet)}
-                                  </div>
-                                  {bidder.username && bidder.display_name && (
-                                    <div className="text-xs text-caption truncate">@{bidder.username}</div>
-                                  )}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                              <span className="font-semibold text-primary">${formatNumber(bidder.totalSpentUSD)}</span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                              <span className="text-caption">{bidder.bidCount}</span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <div>
+                      <button
+                        onClick={() => handleClaim(week._id)}
+                        disabled={claiming === week._id}
+                        className="px-6 py-3 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50 flex items-center space-x-2"
+                      >
+                        {claiming === week._id ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Claiming...</span>
+                          </>
+                        ) : (
+                          <span>Claim ${formatNumber(week.rewardAmount)}</span>
+                        )}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
+                </motion.div>
+              ))}
+
+              {/* Current Week Progress */}
+              {currentWeekRewards.map((week, index) => (
+                <motion.div
+                  key={week._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: (unclaimedRewards.length + index) * 0.05 }}
+                  className="p-6 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500/50 transition-all"
+                >
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <h3 className="text-lg">
+                          {week.weekLabel} - Week of {new Date(week.weekStartDate).toLocaleDateString()} - {new Date(week.weekEndDate).toLocaleDateString()}
+                        </h3>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-400 mb-1">Total Spent</p>
+                          <p className="">${formatNumber(week.totalSpentUSD)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400 mb-1">Bids Placed</p>
+                          <p className="">{week.bidCount}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400 mb-1">Reward</p>
+                          <p className="text-green-400">${formatNumber(week.rewardAmount)}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="px-6 py-3 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        In Progress
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+
+              {/* Claimed Rewards */}
+              {claimedRewards.map((week, index) => (
+                <motion.div
+                  key={week._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: (unclaimedRewards.length + currentWeekRewards.length + index) * 0.05 }}
+                  className="p-6 rounded-xl bg-white/5 border border-white/10 hover:border-purple-500/50 transition-all opacity-75"
+                >
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <h3 className="text-lg">
+                          {week.weekLabel} - Week of {new Date(week.weekStartDate).toLocaleDateString()} - {new Date(week.weekEndDate).toLocaleDateString()}
+                        </h3>
+                        <CheckCircle className="w-5 h-5 text-green-400" />
+                      </div>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-400 mb-1">Total Spent</p>
+                          <p className="">${formatNumber(week.totalSpentUSD)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400 mb-1">Bids Placed</p>
+                          <p className="">{week.bidCount}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400 mb-1">Reward</p>
+                          <p className="text-green-400">${formatNumber(week.rewardAmount)}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="px-6 py-3 rounded-lg bg-green-500/10 text-green-400 border border-green-500/20">
+                        Claimed
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
+
+        {/* Weekly Leaderboard */}
+        <div>
+          <h2 className="text-2xl mb-6">Weekly Top Bidders</h2>
+          <h2 className="text-2xl mb-6">Weekly Top Bidders</h2>
+          {loadingLeaderboard ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+            </div>
+          ) : weeklyBidders.length === 0 ? (
+            <div className="p-8 rounded-xl bg-white/5 border border-white/10 text-center">
+              <p className="text-gray-400">No qualifying bids this week (minimum $10 USD)</p>
+            </div>
+          ) : (
+            <div className="rounded-xl bg-white/5 border border-white/10 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-white/5 border-b border-white/10">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-sm text-gray-400">Rank</th>
+                      <th className="px-6 py-4 text-left text-sm text-gray-400">User</th>
+                      <th className="px-6 py-4 text-right text-sm text-gray-400">Total Spent</th>
+                      <th className="px-6 py-4 text-right text-sm text-gray-400">Bids</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/10">
+                    {weeklyBidders.map((bidder, index) => (
+                      <tr key={bidder._id} className="hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center">
+                            {index === 0 && <span className="text-2xl">🥇</span>}
+                            {index === 1 && <span className="text-2xl">🥈</span>}
+                            {index === 2 && <span className="text-2xl">🥉</span>}
+                            {index > 2 && <span className="text-gray-400 font-medium">#{index + 1}</span>}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            {bidder.pfp_url && (
+                              <img
+                                src={bidder.pfp_url}
+                                alt={bidder.display_name || bidder.username || 'User'}
+                                className="w-10 h-10 rounded-full border-2 border-white/10"
+                              />
+                            )}
+                            <div>
+                              <div className="font-medium">
+                                {bidder.display_name || bidder.username || formatWallet(bidder.wallet)}
+                              </div>
+                              {bidder.username && bidder.display_name && (
+                                <div className="text-xs text-gray-400">@{bidder.username}</div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span className="font-semibold text-purple-400">${formatNumber(bidder.totalSpentUSD)}</span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span className="text-gray-400">{bidder.bidCount}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </PageLayout>
+    </div>
   )
 }
 

@@ -6,12 +6,15 @@ import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useNavigateWithLoader } from "@/utils/useNavigateWithLoader"
 import { useRouter, usePathname } from "next/navigation"
-// import SearchBar from "./SearchBar"
-import { RiSearchLine, RiInformationLine, RiAddCircleLine, RiTrophyLine, RiQrScanLine, RiUserLine } from "react-icons/ri"
+import { RiSearchLine, RiInformationLine, RiAddCircleLine, RiTrophyLine, RiQrScanLine, RiUserLine, RiHomeLine } from "react-icons/ri"
+import { Bell, Sparkles } from "lucide-react"
 import { usePrivy } from "@privy-io/react-auth"
 import { GoDotFill } from "react-icons/go";
+import { motion, AnimatePresence } from "framer-motion"
 import LoginWithOAuth from "../utils/twitterConnect"
 import AggregateConnector from "../utils/aggregateConnector"
+import UserWidget from "./UserWidget"
+import NotificationModal from "./NotificationModal"
 
 
 export default function Navbar(){
@@ -19,9 +22,50 @@ export default function Navbar(){
     const {user} = useGlobalContext()
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const [isSearchOpen, setIsSearchOpen] = useState(false)
+    const [notificationModalOpen, setNotificationModalOpen] = useState(false)
+    const [hasNotifications, setHasNotifications] = useState(false)
+    const [scrolled, setScrolled] = useState(false)
     const navigateWithLoader = useNavigateWithLoader()
     const pathname = usePathname()
     const mobileMenuRef = useRef<HTMLDivElement>(null)
+    const { authenticated, login, getAccessToken } = usePrivy()
+
+    // Scroll detection for floating navbar
+    useEffect(() => {
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 20)
+        }
+        window.addEventListener('scroll', handleScroll)
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [])
+
+    // Check notification status
+    useEffect(() => {
+        const checkNotifications = async () => {
+            if (!user?.socialId) return;
+            
+            try {
+                const accessToken = await getAccessToken();
+                const response = await fetch(`/api/users/profile?socialId=${user.socialId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setHasNotifications(!!data.user?.notificationDetails?.token);
+                }
+            } catch (error) {
+                console.error('Failed to check notification status:', error);
+            }
+        };
+
+        if (authenticated && user) {
+            checkNotifications();
+        }
+    }, [user?.socialId, authenticated, getAccessToken]);
 
     // Close mobile menu when clicking outside
     useEffect(() => {
@@ -48,228 +92,259 @@ export default function Navbar(){
 
     const router = useRouter()
 
-    const { authenticated } = usePrivy()
+    const navItems = [
+        { href: '/', label: 'Home', icon: RiHomeLine },
+        { href: '/create', label: 'Create', icon: RiAddCircleLine },
+        { href: '/leaderboard', label: 'Leaderboard', icon: RiTrophyLine },
+        { href: '/earn', label: 'Earn', icon: Sparkles },
+        { href: '/info', label: 'Info', icon: RiInformationLine },
+    ]
 
     return (
         <>
-            {/* Search Bar Overlay */}
-           {/* {authenticated && <SearchBar isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />} */}
+            {/* Notification Modal */}
+            <NotificationModal 
+                isOpen={notificationModalOpen}
+                onClose={() => setNotificationModalOpen(false)}
+            />
+
+            {/* User Widget - Desktop Only */}
+            <UserWidget 
+                isAuthenticated={authenticated}
+                onConnect={() => login()}
+            />
+
+            {/* Floating Desktop Navbar */}
+            <motion.nav 
+                initial={{ y: 100 }}
+                animate={{ y: 0 }}
+                className={`hidden lg:block fixed bottom-0 left-0 right-0 z-50 transition-all duration-300 ${
+                    scrolled ? 'pb-4' : 'pb-6'
+                }`}
+            >
+                <div className={`max-w-7xl mx-auto px-6 transition-all duration-300`}>
+                    <motion.div 
+                        className={`relative rounded-2xl border transition-all duration-300 ${
+                            scrolled 
+                                ? 'bg-black/80 backdrop-blur-xl border-white/10 shadow-xl shadow-purple-500/10' 
+                                : 'bg-white/5 backdrop-blur-md border-white/5'
+                        }`}
+                    >
+                        {/* Gradient glow effect */}
+                        <div className="absolute -inset-[1px] bg-linear-to-r from-purple-500/20 via-pink-500/20 to-purple-500/20 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity blur-xl -z-10"></div>
+                        
+                        <div className="flex items-center justify-between px-6 py-4">
+                            {/* Logo */}
+                            <button 
+                                onClick={() => router.push("/")}
+                                className="flex items-center gap-3 group"
+                            >
+                                <div className="w-10 h-10 rounded-xl overflow-hidden border border-purple-500/30 group-hover:border-purple-500/60 transition-colors relative">
+                                    <Image src="/pfp.jpg" alt="House" width={40} height={40} className="scale-125" />
+                                </div>
+                                <span className="text-xl font-bold bg-linear-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                                    House
+                                </span>
+                            </button>
+
+                            {/* Center Navigation */}
+                            <div className="flex items-center gap-2">
+                                {navItems.map((item) => {
+                                    const Icon = item.icon
+                                    const isActive = pathname === item.href
+                                    return (
+                                        <a
+                                            key={item.href}
+                                            href={item.href}
+                                            onClick={(e) => handleNavClick(e, item.href)}
+                                            className={`relative px-4 py-2 rounded-lg font-medium transition-all duration-200 cursor-pointer ${
+                                                isActive
+                                                    ? 'text-white'
+                                                    : 'text-gray-400 hover:text-white'
+                                            }`}
+                                        >
+                                            {isActive && (
+                                                <motion.div
+                                                    layoutId="activeNav"
+                                                    className="absolute inset-0 bg-linear-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-lg"
+                                                    transition={{ type: "spring", damping: 30, stiffness: 400 }}
+                                                />
+                                            )}
+                                            <span className="relative flex items-center gap-2">
+                                                <Icon className="text-lg" />
+                                                {item.label}
+                                            </span>
+                                        </a>
+                                    )
+                                })}
+                            </div>
+
+                            {/* Right Actions */}
+                            <div className="flex items-center gap-3">
+                                {authenticated && (
+                                    <button
+                                        onClick={() => setNotificationModalOpen(true)}
+                                        className="relative p-2 rounded-lg hover:bg-white/5 transition-colors group"
+                                    >
+                                        <Bell className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
+                                        {hasNotifications && (
+                                            <div className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                        )}
+                                    </button>
+                                )}
+                                
+                                <div className="pl-3 border-l border-white/10">
+                                    <AggregateConnector />
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            </motion.nav>
 
             {/* Mobile Navbar */}
-            <div className="relative z-50 lg:hidden" ref={mobileMenuRef}>
-                <div className="w-full p-4 flex justify-between items-center rounded-b-lg fixed h-12 top-0 left-0 border-b-[0.1px] border-b-secondary/50 bg-black/80 backdrop-blur-sm">
-                    <button onClick={()=>{router.push("/")}} className="text-xl font-bold w-8 h-8 aspect-square rounded-lg border border-primary/10 overflow-hidden"><Image src="/pfp.jpg" alt="Logo" width={32} height={32} className="scale-125" /></button>
-                    
-                    <div className="flex items-center gap-4">
-                        {/* Search Button */}
-                       {/* {authenticated && <button 
-                            onClick={() => setIsSearchOpen(true)}
-                            className="text-primary hover:text-white transition-colors"
-                        >
-                            <RiSearchLine className="text-xl" />
-                        </button>} */}
-
-                        {/* WalletConnect or Hamburger Menu */}
-                        <AggregateConnector />
-                        {authenticated && (
+            <div className="lg:hidden">
+                <motion.div 
+                    initial={{ y: 100 }}
+                    animate={{ y: 0 }}
+                    className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4"
+                    ref={mobileMenuRef}
+                >
+                    <div className={`rounded-2xl border transition-all duration-300 ${
+                        isMenuOpen || scrolled
+                            ? 'bg-black/90 backdrop-blur-xl border-white/10 shadow-xl' 
+                            : 'bg-white/5 backdrop-blur-md border-white/5'
+                    }`}>
+                        <div className="grid grid-flow-col items-center px-2 py-3">
                             <button 
-                                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                                className="flex flex-col gap-1 w-6 h-6 justify-center items-center"
+                                onClick={() => router.push("/")}
+                                className="flex items-center justify-center"
                             >
-                                <div className={`w-4 h-0.5 bg-white transition-all duration-300 ${isMenuOpen ? 'rotate-45 translate-y-1.5' : ''}`}></div>
-                                <div className={`w-4 h-0.5 bg-white transition-all duration-300 ${isMenuOpen ? 'opacity-0' : ''}`}></div>
-                                <div className={`w-4 h-0.5 bg-white transition-all duration-300 ${isMenuOpen ? '-rotate-45 -translate-y-1.5' : ''}`}></div>
+                                <div className="w-8 h-8 rounded-lg overflow-hidden border border-purple-500/30">
+                                    <Image src="/pfp.jpg" alt="House" width={32} height={32} className="scale-125" />
+                                </div>
                             </button>
-                        )}
+
+                            {authenticated && (
+                                <>
+                                    <button
+                                        onClick={(e) => handleNavClick(e as any, '/create')}
+                                        className={`p-2 rounded-lg transition-colors flex items-center justify-center ${
+                                            pathname === '/create'
+                                                ? 'bg-linear-to-r from-purple-500/20 to-pink-500/20 text-white border border-purple-500/30'
+                                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                        }`}
+                                    >
+                                        <RiAddCircleLine className="text-xl" />
+                                    </button>
+                                    <button
+                                        onClick={(e) => handleNavClick(e as any, '/leaderboard')}
+                                        className={`p-2 rounded-lg transition-colors flex items-center justify-center ${
+                                            pathname === '/leaderboard'
+                                                ? 'bg-linear-to-r from-purple-500/20 to-pink-500/20 text-white border border-purple-500/30'
+                                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                        }`}
+                                    >
+                                        <RiTrophyLine className="text-xl" />
+                                    </button>
+                                    <button
+                                        onClick={(e) => handleNavClick(e as any, '/earn')}
+                                        className={`p-2 rounded-lg transition-colors flex items-center justify-center ${
+                                            pathname === '/earn'
+                                                ? 'bg-linear-to-r from-purple-500/20 to-pink-500/20 text-white border border-purple-500/30'
+                                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                        }`}
+                                    >
+                                        <Sparkles className="w-5 h-5" />
+                                    </button>
+                                    <div className="flex items-center justify-center">
+                                        <AggregateConnector />
+                                    </div>
+                                    <button 
+                                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                                        className="p-2 rounded-lg hover:bg-white/5 transition-colors flex items-center justify-center"
+                                    >
+                                        <div className="flex flex-col gap-1 w-5 h-5 justify-center items-center">
+                                            <motion.div 
+                                                animate={{
+                                                    rotate: isMenuOpen ? 45 : 0,
+                                                    y: isMenuOpen ? 6 : 0
+                                                }}
+                                                className="w-4 h-0.5 bg-white"
+                                            />
+                                            <motion.div 
+                                                animate={{
+                                                    opacity: isMenuOpen ? 0 : 1
+                                                }}
+                                                className="w-4 h-0.5 bg-white"
+                                            />
+                                            <motion.div 
+                                                animate={{
+                                                    rotate: isMenuOpen ? -45 : 0,
+                                                    y: isMenuOpen ? -6 : 0
+                                                }}
+                                                className="w-4 h-0.5 bg-white"
+                                            />
+                                        </div>
+                                    </button>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Mobile Menu Dropdown */}
+                        <AnimatePresence>
+                            {authenticated && isMenuOpen && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="overflow-hidden border-t border-white/10"
+                                >
+                                    <div className="p-2">
+                                        {navItems.filter(item => item.href === '/' || item.href === '/info').map((item) => {
+                                            const Icon = item.icon
+                                            const isActive = pathname === item.href
+                                            return (
+                                                <a
+                                                    key={item.href}
+                                                    href={item.href}
+                                                    onClick={(e) => handleNavClick(e, item.href)}
+                                                    className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all cursor-pointer ${
+                                                        isActive
+                                                            ? 'bg-linear-to-r from-purple-500/20 to-pink-500/20 text-white border border-purple-500/30'
+                                                            : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                                    }`}
+                                                >
+                                                    <Icon className="text-lg" />
+                                                    {item.label}
+                                                </a>
+                                            )
+                                        })}
+                                        
+                                        <div className="px-4 py-3">
+                                            <AggregateConnector />
+                                        </div>
+                                        
+                                        <button
+                                            onClick={() => {
+                                                setNotificationModalOpen(true)
+                                                setIsMenuOpen(false)
+                                            }}
+                                            className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-gray-400 hover:bg-white/5 hover:text-white transition-all w-full relative"
+                                        >
+                                            <Bell className="text-lg" />
+                                            Notifications
+                                            {hasNotifications && (
+                                                <div className="absolute top-3 left-9 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                            )}
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
-                </div>
-
-                {/* Mobile Dropdown Menu */}
-                {authenticated && (
-                    <ul className={`fixed w-full top-12 ${isMenuOpen ? "" : "opacity-0 pointer-events-none"} duration-200 shadow-primary/30 bg-black/80 backdrop-blur-3xl rounded-b-lg shadow-lg overflow-hidden z-50`}>
-                        <li className="border-b border-primary/50">
-                            <a 
-                            href="/profile"
-                            onClick={(e) => handleNavClick(e, '/profile')}
-                            className={`flex items-center gap-2 px-4 py-3 font-semibold transition-colors cursor-pointer w-full ${
-                                pathname === '/profile' ? 'text-primary' : 'text-white'
-                            }`}
-                        >
-                            <RiUserLine className="text-lg" />
-                            My Profile
-                        </a>
-                        </li>
-                        <li className="border-b border-primary/50">
-                            <a 
-                            href="/"
-                            onClick={(e) => handleNavClick(e, '/')}
-                            className={`flex items-center gap-2 px-4 py-3 font-semibold transition-colors cursor-pointer w-full ${
-                                pathname === '/' ? 'text-primary' : 'text-white'
-                            }`}
-                        >
-                            <GoDotFill className="text-lg animate-pulse" />
-                            Live Auctions
-                        </a>
-                        </li>
-                        <li className="border-b border-primary/50">
-                            <a 
-                            href="/info"
-                            onClick={(e) => handleNavClick(e, '/info')}
-                            className={`flex items-center gap-2 px-4 py-3 font-semibold transition-colors cursor-pointer w-full ${
-                                pathname === '/info' ? 'text-primary' : 'text-white'
-                            }`}
-                        >
-                            <RiInformationLine className="text-lg" />
-                            How House Works
-                        </a>
-                        </li>
-                        <li className="border-b border-primary/50">
-                            <a 
-                            href="/create"
-                            onClick={(e) => handleNavClick(e, '/create')}
-                            className={`flex items-center gap-2 px-4 py-3 font-semibold transition-colors cursor-pointer w-full ${
-                                pathname === '/create' ? 'text-primary' : 'text-white'
-                            }`}
-                        >
-                            <RiAddCircleLine className="text-lg" />
-                            Start Your Auction
-                        </a>
-                        </li>
-                        <li className="border-b border-primary/50">
-                            <a 
-                            href="/leaderboard"
-                            onClick={(e) => handleNavClick(e, '/leaderboard')}
-                            className={`flex items-center gap-2 px-4 py-3 font-semibold transition-colors cursor-pointer w-full text-nowrap ${
-                                pathname === '/leaderboard' ? 'text-primary' : 'text-white'
-                            }`}
-                        >
-                            <RiTrophyLine className="text-lg" />
-                            Global Leaderboard
-                        </a>
-                        </li>
-                        <li className="border-b border-primary/50">
-                            <a 
-                            href="/earn"
-                            onClick={(e) => handleNavClick(e, '/earn')}
-                            className={`flex items-center gap-2 px-4 py-3 font-semibold transition-colors cursor-pointer w-full ${
-                                pathname === '/earn' ? 'text-primary' : 'text-white'
-                            }`}
-                        >
-                            <RiQrScanLine className="text-lg" />
-                            Weekly Rewards
-                        </a>
-                        </li>
-                    </ul>
-                )}
-            </div>
-
-            {/* Desktop Sidebar */}
-            <div className="hidden lg:flex lg:fixed lg:left-0 lg:top-0 lg:h-full lg:w-64 lg:flex-col lg:bg-black/90 lg:backdrop-blur-sm lg:border-r lg:border-r-secondary/50 lg:z-50">
-                {/* Sidebar Header */}
-                <div className="p-6  flex items-center justify-start gap-4">
-                <Image src="/pfp.jpg" alt="Logo" width={32} height={32} className="scale-125 border-primary/10 rounded-lg border" />
-                    <button onClick={()=>{router.push("/")}} className="text-xl font-bold text-white cursor-pointer hover:text-primary transition-colors">House</button>
-                </div>
-
-                {/* Search Button */}
-                {/* {authenticated && <div className="px-4 mb-4">
-                    <button
-                        onClick={() => setIsSearchOpen(true)}
-                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/30 transition-colors text-caption hover:text-white"
-                    >
-                        <RiSearchLine className="text-xl" />
-                        <span>Search Users</span>
-                    </button>
-                </div>} */}
-
-                {/* Sidebar Content */}
-                <div className="flex-1 p-4">
-                    <nav className="space-y-2">
-                        <a 
-                            href="/profile"
-                            onClick={(e) => handleNavClick(e, '/profile')}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer ${
-                                pathname === '/profile' 
-                                    ? 'text-primary bg-primary/20 border border-primary/30' 
-                                    : 'text-primary hover:bg-primary/10'
-                            }`}
-                        >
-                            <RiUserLine className="text-xl" />
-                            <span className="text-md">My Profile</span>
-                        </a>
-                        
-                        <a 
-                            href="/"
-                            onClick={(e) => handleNavClick(e, '/')}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer ${
-                                pathname === '/' 
-                                    ? 'text-primary bg-primary/20 border border-primary/30' 
-                                    : 'text-primary hover:bg-primary/10'
-                            }`}
-                        >
-                            <GoDotFill className="text-xl animate-pulse" />
-                            <span className="text-md">Live Auctions</span>
-                        </a>
-                        
-                        <a 
-                            href="/info"
-                            onClick={(e) => handleNavClick(e, '/info')}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer ${
-                                pathname === '/info' 
-                                    ? 'text-primary bg-primary/20 border border-primary/30' 
-                                    : 'text-primary hover:bg-primary/10'
-                            }`}
-                        >
-                            <RiInformationLine className="text-xl" />
-                            <span className="text-md">How House Works</span>
-                        </a>
-                        
-                        <a 
-                            href="/create"
-                            onClick={(e) => handleNavClick(e, '/create')}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer ${
-                                pathname === '/create' 
-                                    ? 'text-primary bg-primary/20 border border-primary/30' 
-                                    : 'text-primary hover:bg-primary/10'
-                            }`}
-                        >
-                            <RiAddCircleLine className="text-xl" />
-                            <span className="text-md">Start Your Auction</span>
-                        </a>
-                        
-                        <a 
-                            href="/leaderboard"
-                            onClick={(e) => handleNavClick(e, '/leaderboard')}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer ${
-                                pathname === '/leaderboard' 
-                                    ? 'text-primary bg-primary/20 border border-primary/30' 
-                                    : 'text-primary hover:bg-primary/10'
-                            }`}
-                        >
-                            <RiTrophyLine className="text-xl" />
-                            <span className="text-md text-nowrap">Global Leaderboard</span>
-                        </a>
-                        
-                        <a 
-                            href="/earn"
-                            onClick={(e) => handleNavClick(e, '/earn')}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors cursor-pointer ${
-                                pathname === '/earn' 
-                                    ? 'text-primary bg-primary/20 border border-primary/30' 
-                                    : 'text-primary hover:bg-primary/10'
-                            }`}
-                        >
-                            <RiQrScanLine className="text-xl" />
-                            <span className="text-md">Weekly Rewards</span>
-                        </a>
-                        
-                    </nav>
-                </div>
-
-                {/* Sidebar Footer - Profile */}
-                <div className="p-4 border-t border-secondary/20">
-                    <AggregateConnector/>
-                </div>
+                </motion.div>
             </div>
         </>
     )

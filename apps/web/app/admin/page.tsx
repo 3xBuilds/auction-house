@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useGlobalContext } from '@/utils/providers/globalContext';
 import { getAccessToken, usePrivy } from '@privy-io/react-auth';
-import { RiLoader5Fill, RiDeleteBin6Line, RiEditLine, RiAddLine } from 'react-icons/ri';
+import { Shield, Plus, Edit2, Trash2, Search, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { motion } from 'framer-motion';
 import {
   Table,
   TableBody,
@@ -37,6 +38,7 @@ export default function AdminPage() {
   const [newWallet, setNewWallet] = useState('');
   const [newNickname, setNewNickname] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Check if user has admin access
   useEffect(() => {
@@ -215,12 +217,15 @@ export default function AdminPage() {
 
   if (!authenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Heading size="md" gradient={false} className="text-white mb-4">
-            Access Denied
-          </Heading>
-          <p className="text-white/70">Please login to access admin panel.</p>
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="max-w-md w-full p-8 rounded-xl bg-white/5 border border-white/10 text-center">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center mx-auto mb-4">
+            <Shield className="w-8 h-8 text-red-400" />
+          </div>
+          <h2 className="text-2xl mb-2">Access Denied</h2>
+          <p className="text-gray-400">
+            Please login to access admin panel
+          </p>
         </div>
       </div>
     );
@@ -228,217 +233,246 @@ export default function AdminPage() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Heading size="md" gradient={false} className="text-white mb-4">
-            Unauthorized
-          </Heading>
-          <p className="text-white/70">You do not have permission to access this page.</p>
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="max-w-md w-full p-8 rounded-xl bg-white/5 border border-white/10 text-center">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center mx-auto mb-4">
+            <Shield className="w-8 h-8 text-red-400" />
+          </div>
+          <h2 className="text-2xl mb-2">Access Denied</h2>
+          <p className="text-gray-400">
+            You don't have permission to access the admin panel
+          </p>
         </div>
       </div>
     );
   }
 
+  const filteredWhitelist = whitelists.filter(
+    entry =>
+      entry.walletAddress.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      entry.nickname?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div className="min-h-screen p-4 lg:p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <Heading size="lg" gradient className="mb-0">
-            Whitelists
-          </Heading>
-          <Button
+    <div className="min-h-screen py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-3">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-500/20 to-orange-500/20 flex items-center justify-center">
+              <Shield className="w-6 h-6 text-red-400" />
+            </div>
+            <div>
+              <h1 className="text-3xl">Admin Panel</h1>
+              <p className="text-gray-400">Manage whitelist and platform settings</p>
+            </div>
+          </div>
+          <button
             onClick={() => setShowAddModal(true)}
-            className="bg-linear-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+            className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all flex items-center space-x-2"
           >
-            <RiAddLine className="text-xl" />
-            Add
-          </Button>
+            <Plus className="w-5 h-5" />
+            <span>Add Address</span>
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="mb-6">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by address or nickname..."
+              className="w-full pl-10 pr-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-purple-500 focus:outline-none transition-colors"
+            />
+          </div>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <RiLoader5Fill className="animate-spin text-4xl text-purple-500" />
+            <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
           </div>
         ) : (
-          <div className="bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-white/70">Wallet Address</TableHead>
-                  <TableHead className="text-white/70">Nickname</TableHead>
-                  <TableHead className="text-white/70">Status</TableHead>
-                  <TableHead className="text-white/70">Added By</TableHead>
-                  <TableHead className="text-white/70">Date Added</TableHead>
-                  <TableHead className="text-white/70 text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {whitelists.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-white/50 py-8">
-                      No whitelisted wallets found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  whitelists.map((entry) => (
-                    <TableRow key={entry._id} className="hover:bg-white/5">
-                      <TableCell className="text-white font-mono text-sm">
-                        {entry.walletAddress.slice(0, 6)}...{entry.walletAddress.slice(-4)}
-                      </TableCell>
-                      <TableCell className="text-white">
-                        {entry.nickname || <span className="text-white/30 italic">No nickname</span>}
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                            entry.status === 'ACTIVE'
-                              ? 'bg-green-500/20 text-green-400'
-                              : 'bg-red-500/20 text-red-400'
-                          }`}
-                        >
-                          {entry.status}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-white/70">
-                        {entry.addedBy || <span className="text-white/30 italic">Unknown</span>}
-                      </TableCell>
-                      <TableCell className="text-white/70">
-                        {new Date(entry.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => {
-                              setEditingEntry(entry);
-                              setNewNickname(entry.nickname || '');
-                            }}
-                            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                            title="Edit nickname"
+          <>
+            {/* Whitelist Table */}
+            <div className="rounded-xl bg-white/5 border border-white/10 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-white/5 border-b border-white/10">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-sm text-gray-400">Address</th>
+                      <th className="px-6 py-4 text-left text-sm text-gray-400">Nickname</th>
+                      <th className="px-6 py-4 text-left text-sm text-gray-400">Status</th>
+                      <th className="px-6 py-4 text-left text-sm text-gray-400">Added Date</th>
+                      <th className="px-6 py-4 text-left text-sm text-gray-400">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/10">
+                    {filteredWhitelist.map((entry, index) => (
+                      <motion.tr
+                        key={entry._id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="hover:bg-white/5 transition-colors"
+                      >
+                        <td className="px-6 py-4">
+                          <code className="text-sm text-purple-400">{entry.walletAddress}</code>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm">{entry.nickname || '-'}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs ${
+                              entry.status === 'ACTIVE'
+                                ? 'bg-green-500/20 text-green-400 border border-green-500/20'
+                                : 'bg-gray-500/20 text-gray-400 border border-gray-500/20'
+                            }`}
                           >
-                            <RiEditLine className="text-blue-400 text-lg" />
-                          </button>
-                          <button
-                            onClick={() => handleToggleStatus(entry)}
-                            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                            title={entry.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
-                          >
-                            <span className="text-sm font-semibold">
-                              {entry.status === 'ACTIVE' ? '🔓' : '🔒'}
-                            </span>
-                          </button>
-                          <button
-                            onClick={() => handleDeleteWallet(entry.walletAddress)}
-                            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                            title="Delete"
-                          >
-                            <RiDeleteBin6Line className="text-red-400 text-lg" />
-                          </button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+                            {entry.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm text-gray-400">
+                            {new Date(entry.createdAt).toLocaleDateString()}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center space-x-2">
+                            <button 
+                              onClick={() => {
+                                setEditingEntry(entry);
+                                setNewNickname(entry.nickname || '');
+                              }}
+                              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                            >
+                              <Edit2 className="w-4 h-4 text-blue-400" />
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteWallet(entry.walletAddress)}
+                              className="p-2 rounded-lg bg-white/5 hover:bg-red-500/10 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-400" />
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-        <div className="mt-4 text-white/50 text-sm">
-          Total Whitelisted Wallets: {whitelists.length}
-        </div>
+              {filteredWhitelist.length === 0 && (
+                <div className="text-center py-12">
+                  <p className="text-gray-400">No entries found</p>
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Add Wallet Modal */}
+      {/* Add Address Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-900 border border-white/10 rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold text-white mb-4">Add Wallet to Whitelist</h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-md w-full p-8 rounded-xl bg-[#0f0f0f] border border-white/10"
+          >
+            <h3 className="text-2xl mb-6">Add Whitelist Address</h3>
             <div className="space-y-4">
               <div>
-                <Input
-                  label="Wallet Address"
+                <label className="block text-sm text-gray-400 mb-2">Wallet Address</label>
+                <input
                   type="text"
                   value={newWallet}
-                  onChange={(value) => setNewWallet(value)}
+                  onChange={(e) => setNewWallet(e.target.value)}
                   placeholder="0x..."
-                  className="w-full"
-                  required
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-purple-500 focus:outline-none transition-colors"
                 />
               </div>
               <div>
-                <Input
-                  label="Nickname (Optional)"
+                <label className="block text-sm text-gray-400 mb-2">Nickname</label>
+                <input
                   type="text"
                   value={newNickname}
-                  onChange={(value) => setNewNickname(value)}
-                  placeholder="e.g., Limi, Captain"
-                  className="w-full"
+                  onChange={(e) => setNewNickname(e.target.value)}
+                  placeholder="Enter a friendly name"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-purple-500 focus:outline-none transition-colors"
                 />
               </div>
-              <div className="flex gap-3 mt-6">
-                <Button
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setNewWallet('');
-                    setNewNickname('');
-                  }}
-                  className="flex-1 bg-gray-700 hover:bg-gray-600"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleAddWallet}
-                  className="flex-1 bg-linear-to-r from-purple-500 to-pink-500"
-                >
-                  Add Wallet
-                </Button>
-              </div>
             </div>
-          </div>
+            <div className="flex items-center space-x-3 mt-6">
+              <button
+                onClick={handleAddWallet}
+                className="flex-1 py-3 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all"
+              >
+                Add Address
+              </button>
+              <button
+                onClick={() => {
+                  setShowAddModal(false);
+                  setNewWallet('');
+                  setNewNickname('');
+                }}
+                className="flex-1 py-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.div>
         </div>
       )}
 
       {/* Edit Nickname Modal */}
       {editingEntry && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-900 border border-white/10 rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold text-white mb-4">Edit Nickname</h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="max-w-md w-full p-8 rounded-xl bg-[#0f0f0f] border border-white/10"
+          >
+            <h3 className="text-2xl mb-6">Edit Nickname</h3>
             <div className="space-y-4">
               <div>
-                <label className="text-white/70 text-sm mb-2 block">Wallet Address</label>
-                <div className="text-white font-mono text-sm bg-white/5 p-3 rounded-lg">
+                <label className="block text-sm text-gray-400 mb-2">Wallet Address</label>
+                <div className="text-white font-mono text-sm bg-white/5 p-3 rounded-lg break-all">
                   {editingEntry.walletAddress}
                 </div>
               </div>
               <div>
-                <Input
-                  label="Nickname"
+                <label className="block text-sm text-gray-400 mb-2">Nickname</label>
+                <input
                   type="text"
                   value={newNickname}
-                  onChange={(value) => setNewNickname(value)}
+                  onChange={(e) => setNewNickname(e.target.value)}
                   placeholder="Enter nickname"
-                  className="w-full"
+                  className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-purple-500 focus:outline-none transition-colors"
                 />
               </div>
-              <div className="flex gap-3 mt-6">
-                <Button
-                  onClick={() => {
-                    setEditingEntry(null);
-                    setNewNickname('');
-                  }}
-                  className="flex-1 bg-gray-700 hover:bg-gray-600"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleUpdateWallet}
-                  className="flex-1 bg-linear-to-r from-purple-500 to-pink-500"
-                >
-                  Update
-                </Button>
-              </div>
             </div>
-          </div>
+            <div className="flex items-center space-x-3 mt-6">
+              <button
+                onClick={handleUpdateWallet}
+                className="flex-1 py-3 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 transition-all"
+              >
+                Update
+              </button>
+              <button
+                onClick={() => {
+                  setEditingEntry(null);
+                  setNewNickname('');
+                }}
+                className="flex-1 py-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.div>
         </div>
       )}
     </div>

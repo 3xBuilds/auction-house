@@ -50,6 +50,8 @@ import LoginWithOAuth from "./utils/twitterConnect";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import AggregateConnector from "./utils/aggregateConnector";
 import ScrollingName from "./utils/ScrollingName";
+import { AuctionCard } from "./UI/AuctionCard";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Bidder {
   user: string;
@@ -949,48 +951,56 @@ const LandingAuctions: React.FC = () => {
 
   // Currency Filter Component (reusable)
   const CurrencyFilterButtons = () => (
-    <div className="flex mb-6 overflow-x-hidden">
-      <button
-        onClick={() => setCurrencyFilter("all")}
-        className={`px-4 py-2 font-medium transition-colors capitalize whitespace-nowrap shrink-0 ${
-          currencyFilter === "all"
-            ? "text-primary border-b-2 border-primary bg-white/5 rounded-md"
-            : "text-caption hover:text-foreground"
-        }`}
-      >
-        All
-      </button>
-      <button
-        onClick={() => setCurrencyFilter("usdc")}
-        className={`px-4 py-2 font-medium transition-colors capitalize whitespace-nowrap shrink-0 ${
-          currencyFilter === "usdc"
-            ? "text-primary border-b-2 border-primary bg-white/5 rounded-md"
-            : "text-caption hover:text-foreground"
-        }`}
-      >
-        USDC
-      </button>
-      <button
-        onClick={() => setCurrencyFilter("creator-coins")}
-        className={`px-4 py-2 font-medium transition-colors capitalize whitespace-nowrap shrink-0 ${
-          currencyFilter === "creator-coins"
-            ? "text-primary border-b-2 border-primary bg-white/5 rounded-md"
-            : "text-caption hover:text-foreground"
-        }`}
-      >
-        Creator Coins
-      </button>
-    </div>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex gap-2 mb-8 flex-wrap"
+    >
+      {[
+        { key: 'all', label: 'All Auctions' },
+        { key: 'usdc', label: 'USDC' },
+        { key: 'creator-coins', label: 'Creator Coins' }
+      ].map((filter) => (
+        <motion.button
+          key={filter.key}
+          onClick={() => setCurrencyFilter(filter.key)}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className={`relative px-6 py-3 font-semibold rounded-xl transition-all duration-300 ${
+            currencyFilter === filter.key
+              ? "text-white"
+              : "text-gray-400 hover:text-white"
+          }`}
+        >
+          {currencyFilter === filter.key && (
+            <motion.div
+              layoutId="activeFilter"
+              className="absolute inset-0 bg-linear-to-r from-purple-500 to-pink-500 rounded-xl"
+              transition={{ type: "spring", damping: 30, stiffness: 400 }}
+            />
+          )}
+          <span className="relative z-10">{filter.label}</span>
+        </motion.button>
+      ))}
+    </motion.div>
   );
 
   return (
-    <div className="w-full max-lg:mx-auto mt-2 pb-24">
-      <div className="flex flex-col items-start justify-between mb-8">
-        <h2 className="text-2xl font-bold gradient-text">Latest Auctions</h2>
-        <p className="text-caption text-sm mt-2">
+    <div className="w-full max-w-[1800px] mx-auto px-4 lg:px-8 mt-8 pb-24">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col items-start justify-between mb-8"
+      >
+        <h2 className="text-4xl lg:text-5xl font-bold mb-3">
+          <span className="bg-linear-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+            Live Auctions
+          </span>
+        </h2>
+        <p className="text-white/60 text-lg">
           Discover the most active auctions happening right now
         </p>
-      </div>
+      </motion.div>
 
       {/* Currency Filter */}
       <CurrencyFilterButtons />

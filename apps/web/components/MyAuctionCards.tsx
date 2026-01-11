@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "./UI/button";
-import Heading from "./UI/Heading";
 import { cn } from "@/lib/utils";
-import { RiLoader5Fill } from "react-icons/ri";
+import { Loader2, Hammer, Eye, Package } from "lucide-react";
 import { useNavigateWithLoader } from "@/utils/useNavigateWithLoader";
 import {
   auctionAbi,
@@ -27,6 +26,10 @@ import {
 import { checkStatus } from "@/utils/checkStatus";
 import { usePrivy, useWallets } from '@privy-io/react-auth';
 import { ethers } from "ethers";
+import { AuctionCard } from "./UI/AuctionCard";
+import { EmptyState } from "./UI/EmptyState";
+import { LoadingSpinner } from "./UI/LoadingSpinner";
+import { motion } from "framer-motion";
 
 interface Bidder {
   user: string;
@@ -471,58 +474,29 @@ export default function MyAuctionCards() {
 
   if (loading && !auctions.length) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="flex flex-col gap-2">
-          <RiLoader5Fill className="animate-spin h-8 w-8 text-primary mx-auto" />
-          <span className="ml-2 text-caption">Loading your auctions...</span>
-        </div>
+      <div className="flex justify-center items-center min-h-screen">
+        <LoadingSpinner size="lg" text="Loading your auctions..." />
       </div>
     );
   }
 
   if (!address) {
     return (
-      <div className="w-full overflow-hidden p-4">
-        <Heading size="md" className="mb-6">My Auctions</Heading>
-        <div className="bg-white/10 rounded-lg shadow-md border border-gray-700 p-8 text-center">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-16 h-16 gradient-button rounded-full flex items-center justify-center">
-              <svg 
-                className="w-8 h-8 text-white" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" 
-                />
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Authentication Required</h3>
-              <p className="text-caption mb-4">
-                Please connect your wallet to view and manage your auctions.
-              </p>
-              <p className="text-sm text-caption">
-                Once connected, you'll be able to create, view, and manage your auction listings.
-              </p>
-            </div>
-          </div>
-        </div>
+      <div className="w-full max-w-6xl mx-auto p-4">
+        <h1 className="text-3xl font-bold mb-6">My Auctions</h1>
+        <EmptyState
+          icon={Package}
+          title="Authentication Required"
+          description="Please connect your wallet to view and manage your auctions."
+        />
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="flex flex-col gap-2">
-          <RiLoader5Fill className="animate-spin h-8 w-8 text-primary mx-auto" />
-          <span className="ml-2 text-caption">Loading your auctions...</span>
-        </div>
+      <div className="flex justify-center items-center min-h-screen">
+        <LoadingSpinner size="lg" text="Loading your auctions..." />
       </div>
     );
   }
@@ -542,40 +516,32 @@ export default function MyAuctionCards() {
     (auction) => auction?.status === activeTab
   );
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "text-primary";
-      case "upcoming":
-        return "text-yellow-500";
-      case "ended":
-        return "text-gray-500";
-      default:
-        return "text-gray-500";
-    }
-  };
-
   return (
-    <div className="w-full overflow-hidden p-4">
-      <Heading size="md">My Auctions</Heading>
+    <div className="w-full max-w-6xl mx-auto p-4">
+      <h1 className="text-3xl font-bold mb-6">My Auctions</h1>
+
       {/* Success Message */}
       {successMessage && (
-        <div className="mb-4 p-4 bg-green-900 border border-green-700 rounded-lg">
-          <p className="text-green-200">{successMessage}</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-xl"
+        >
+          <p className="text-green-400">{successMessage}</p>
+        </motion.div>
       )}
 
       {/* Tab Navigation */}
-      <div className="flex mb-6 overflow-x-hidden mt-4">
+      <div className="flex gap-2 mb-6">
         {(["active", "ended"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={cn(
-              "px-4 py-2 font-medium transition-colors capitalize whitespace-nowrap flex-shrink-0",
+              "px-6 py-3 rounded-xl font-medium transition-all duration-300 capitalize",
               activeTab === tab
-                ? "text-primary border-b-2 border-primary bg-white/5 rounded-md"
-                : "text-caption hover:text-foreground"
+                ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg"
+                : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
             )}
           >
             {tab}
@@ -585,157 +551,73 @@ export default function MyAuctionCards() {
 
       {/* Auctions Grid */}
       {filteredAuctions.length === 0 ? (
-        <div className="w-full max-w-6xl mx-auto mt-8">
-        <div className="bg-white/10 rounded-lg shadow-md border border-gray-700 p-8 text-center">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-16 h-16 gradient-button rounded-full flex items-center justify-center">
-              <svg 
-                className="w-8 h-8 text-white" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" 
-                />
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-2">No {activeTab} Auctions</h3>
-              <p className="text-caption mb-4">
-                There are currently no {activeTab} auctions available.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+        <EmptyState
+          icon={Hammer}
+          title={`No ${activeTab} Auctions`}
+          description={`There are currently no ${activeTab} auctions available.`}
+        />
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {filteredAuctions.map((auction) => auction ? (
-            <div
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 1,
+              transition: {
+                staggerChildren: 0.1
+              }
+            }
+          }}
+        >
+          {filteredAuctions.map((auction, index) => auction ? (
+            <motion.div
               key={auction._id}
-              className="bg-white/10 rounded-lg shadow-md border border-gray-700 p-4 hover:shadow-lg transition-shadow w-full"
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0 }
+              }}
             >
-              <div className="flex justify-between items-start mb-4 w-full">
-                <h3 className="text-lg font-semibold truncate flex-1 pr-2 min-w-0">
-                  {auction.auctionName}
-                </h3>
-                <span
-                  className={cn(
-                    "text-sm font-medium capitalize flex-shrink-0",
-                    getStatusColor(auction.status)
-                  )}
-                >
-                  {auction.status}
-                </span>
-              </div>
-
-               {auction.startingWallet && <div className="flex justify-between items-center w-full mb-1">
-                  <span className="text-caption text-sm flex-shrink-0">
-                    Started By:
-                  </span>
-                  <a href={`https://basescan.org/address/${auction.startingWallet}`} className="font-medium text-sm truncate ml-2 text-right text-primary bg-primary/10 p-1 rounded-sm">
-                    {auction.startingWallet.slice(0, 6)}...{auction.startingWallet.slice(-4)}
-                  </a>
-                </div>}
-
-              <div className="space-y-2 mb-4 w-full">
-                <div className="flex justify-between items-center w-full">
-                  <span className="text-caption text-sm flex-shrink-0">
-                    Minimum Bid:
-                  </span>
-                  <span className="font-medium text-sm truncate ml-2 text-right">
-                    {auction.minimumBid} {auction.currency}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center w-full">
-                  <span className="text-caption text-sm flex-shrink-0">
-                    Highest Bid:
-                  </span>
-                  <span className="font-medium text-sm truncate ml-2 text-right">
-                    {auction.highestBid} {auction.currency}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center w-full">
-                  <span className="text-caption text-sm flex-shrink-0">
-                    Participants:
-                  </span>
-                  <span className="font-medium text-sm">
-                    {auction.participantCount}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center w-full">
-                  <span className="text-caption text-sm flex-shrink-0">
-                    Total Bids:
-                  </span>
-                  <span className="font-medium text-sm">
-                    {auction.bidCount}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-start w-full">
-                  <span className="text-caption text-sm flex-shrink-0">
-                    Time:
-                  </span>
-                  <span className="font-medium text-xs text-right ml-2 leading-tight max-w-[60%] break-words">
-                    {auction.timeInfo}
-                  </span>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-2 w-full">
-                {auction.status === "active" && (
-                  <Button
-                    onClick={() => endAuction(auction.blockchainAuctionId)}
-                    disabled={isLoading || endingAuction === auction.blockchainAuctionId}
-                    variant="default"
-                    size="sm"
-                    className="flex-1 h-10"
-                  >
-                    {(isLoading && endingAuction === auction.blockchainAuctionId) || endingAuction === auction.blockchainAuctionId ? (
-                      <>
-                        <RiLoader5Fill className="animate-spin h-3 w-3 mr-2" />
-                        Ending...
-                      </>
-                    ) : (
-                      "End Auction"
+              <AuctionCard
+                auction={auction}
+                showActions={true}
+                actions={
+                  <div className="flex gap-2">
+                    {auction.status === "active" && (
+                      <Button
+                        onClick={() => endAuction(auction.blockchainAuctionId)}
+                        disabled={isLoading || endingAuction === auction.blockchainAuctionId}
+                        className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                      >
+                        {(isLoading && endingAuction === auction.blockchainAuctionId) ? (
+                          <>
+                            <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                            Ending...
+                          </>
+                        ) : (
+                          <>
+                            <Hammer className="h-4 w-4 mr-2" />
+                            End Auction
+                          </>
+                        )}
+                      </Button>
                     )}
-                  </Button>
-                )}
 
-                <Button
-                  onClick={() => viewAuction(auction.blockchainAuctionId)}
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 h-10"
-                >
-                  View
-                </Button>
-              </div>
-
-              {auction.status === "ended" && (
-                <div className="text-center mt-2">
-                  <p className="text-caption text-xs">
-                    {auction.highestBid > 0 ? (
-                      <>
-                        Winner: {auction.highestBid} {auction.currency}
-                      </>
-                    ) : (
-                      "No bids received"
-                    )}
-                  </p>
-                </div>
-              )}
-            </div>
+                    <Button
+                      onClick={() => viewAuction(auction.blockchainAuctionId)}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      View
+                    </Button>
+                  </div>
+                }
+              />
+            </motion.div>
           ) : null)}
-        </div>
+        </motion.div>
       )}
     </div>
   );

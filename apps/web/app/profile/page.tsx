@@ -3,15 +3,16 @@
 import { useGlobalContext } from '@/utils/providers/globalContext'
 import { getAccessToken, usePrivy, useWallets } from '@privy-io/react-auth'
 import Image from 'next/image'
-import Heading from '@/components/UI/Heading'
 import RatingCircle from '@/components/UI/RatingCircle'
-import { MdWallet } from 'react-icons/md'
-import { RiUserLine, RiAuctionLine, RiMedalLine, RiCalendarLine, RiTwitterLine, RiLoader5Fill } from 'react-icons/ri'
+import { Wallet, User, Hammer, Award, Calendar, Twitter, Shield, Star } from 'lucide-react'
 import { useNavigateWithLoader } from '@/utils/useNavigateWithLoader'
 import { useState, useEffect } from 'react'
 import TwitterAuthModal from '@/components/UI/TwitterAuthModal'
 import { useMiniKit } from '@coinbase/onchainkit/minikit'
 import ReviewCard from '@/components/UI/ReviewCard'
+import { LoadingSpinner } from '@/components/UI/LoadingSpinner'
+import { EmptyState } from '@/components/UI/EmptyState'
+import { motion } from 'framer-motion'
 
 interface Review {
   _id: string
@@ -123,11 +124,12 @@ export default function ProfilePage() {
 
   if (!authenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Heading size="md" gradient={false} className="text-white mb-4">Access Denied</Heading>
-          <p className="text-caption">Please login to view your profile.</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <EmptyState
+          icon={Shield}
+          title="Access Denied"
+          description="Please login to view your profile."
+        />
       </div>
     )
   }
@@ -135,10 +137,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <RiLoader5Fill className='text-primary animate-spin text-4xl mb-4 mx-auto' />
-          <p className="text-caption">Loading profile...</p>
-        </div>
+        <LoadingSpinner size="lg" text="Loading profile..." />
       </div>
     )
   }
@@ -154,166 +153,273 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-4xl p-6 max-lg:p-4 pt-20 lg:pt-6">
-        {/* Profile Header */}
-        <div className="bg-black/50 rounded-xl border border-primary/20 p-6 mb-6">
-          <div className="flex max-lg:flex-col items-center max-lg:justify-center gap-6 max-lg:gap-2">
-            {user?.pfp_url ? (
-              <Image
-              unoptimized
-                alt="Profile Picture"
-                src={profileData?.twitterProfile?.profileImageUrl || user.pfp_url}
-                width={1080}
-                height={1080}
-                className="w-16 h-16 aspect-square border-2 border-primary rounded-xl"
-              />
-            ) : (
-              <div className="w-16 h-24 lg:w-32 lg:h-32 aspect-square border-2 border-primary rounded-xl bg-gray-600 flex items-center justify-center">
-                <MdWallet className="text-4xl text-primary" />
-              </div>
-            )}
-            
-            <div className="flex-1 max-lg:text-center">
-              <div className='flex gap-2 items-center max-lg:justify-center mb-4'>
-              <Heading size="md" gradient={false} className="text-white ">
-                {profileData?.twitterProfile?.username || user.username  || 'Anonymous User'}
-              </Heading>
-              {profileData?.averageRating && profileData.averageRating > 0 && (
-                  <div className='relative'>
-                  <RatingCircle
-                    rating={profileData.averageRating}
-                    totalReviews={profileData.totalReviews || 0}
-                    size="sm"
-                    showLabel={false}
-                  />
-                  
+    <div className="min-h-screen p-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Parallax Hero Section */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="relative h-64 mb-8 rounded-3xl overflow-hidden"
+        >
+          {/* Animated gradient background */}
+          <motion.div 
+            animate={{ 
+              backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+            }}
+            transition={{ 
+              duration: 20, 
+              repeat: Infinity,
+              ease: "linear" 
+            }}
+            className="absolute inset-0 bg-linear-to-r from-purple-600 via-pink-500 to-purple-600 bg-[length:200%_100%]"
+          />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(0,0,0,0.3),rgba(0,0,0,0.7))]" />
+          
+          {/* Floating elements */}
+          <motion.div
+            animate={{ y: [0, -20, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-10 right-10 w-20 h-20 bg-white/10 rounded-full blur-xl"
+          />
+          <motion.div
+            animate={{ y: [0, 20, 0] }}
+            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute bottom-10 left-10 w-32 h-32 bg-pink-500/20 rounded-full blur-2xl"
+          />
+          
+          {/* Profile content */}
+          <div className="relative h-full flex items-end p-8">
+            <div className="flex items-end gap-6 w-full">
+              <motion.div
+                initial={{ y: 50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="relative"
+              >
+                {user?.pfp_url ? (
+                  <div className="relative">
+                    <div className="absolute -inset-2 bg-white/20 rounded-3xl blur-xl" />
+                    <Image
+                      unoptimized
+                      alt="Profile Picture"
+                      src={profileData?.twitterProfile?.profileImageUrl || user.pfp_url}
+                      width={140}
+                      height={140}
+                      className="relative w-32 h-32 border-4 border-white/30 rounded-3xl shadow-2xl"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-32 h-32 border-4 border-white/30 rounded-3xl bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-2xl">
+                    <Wallet className="text-6xl text-white" />
                   </div>
                 )}
-                </div>
-              {!context && <p className="text-caption text-sm lg:text-base mb-4 text-caption font-bold">
-                Wallets: {profileData?.wallets.length ? <div className='flex flex-wrap gap-1 max-lg:justify-center mt-1'>
-                  {profileData.wallets.map((wallet, index) => (
-                    <a href={`https://basescan.org/address/${wallet}`} key={wallet} className='p-1 text-xs text-primary font-semibold  bg-primary/10 rounded-md border border-primary'>
-                      {wallet.slice(0, 4)}...{wallet.slice(-2)}{index < profileData.wallets.length - 1 ? ', ' : ''}
-                    </a>
-                  ))}
-                </div> : 'Not connected'}
-              </p>}
+              </motion.div>
               
-              {/* Twitter Profile Section */}
-              {/* <div className="flex flex-wrap gap-4 text-sm mb-4">
-                <div className="flex items-center gap-2 text-primary">
-                  <RiCalendarLine />
-                  <span>Member since {new Date(profileData?.createdAt || '').getFullYear() || new Date().getFullYear()}</span>
+              <motion.div 
+                initial={{ y: 50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="flex-1 pb-2"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-4xl font-bold text-white drop-shadow-lg">
+                    {profileData?.twitterProfile?.username || user.username || 'Anonymous User'}
+                  </h1>
+                  {profileData?.averageRating && profileData.averageRating > 0 && (
+                    <RatingCircle
+                      rating={profileData.averageRating}
+                      totalReviews={profileData.totalReviews || 0}
+                      size="md"
+                      showLabel={false}
+                    />
+                  )}
                 </div>
-              </div> */}
-              
-              {/* Twitter Status */}
-              {!context && <div className="flex items-center gap-4">
-                {profileData?.twitterProfile?.id && (
-                  <div className="flex items-center gap-2 text-primary">
-                    <RiTwitterLine />
-                    <span className="text-sm">Twitter linked: @{profileData.twitterProfile?.username}</span>
+                
+                {!context && profileData?.twitterProfile?.id && (
+                  <div className="flex items-center gap-2 text-white/90">
+                    <Twitter className="w-4 h-4" />
+                    <span className="text-sm font-medium">@{profileData.twitterProfile?.username}</span>
                   </div>
-                ) }
-              </div>}
+                )}
+              </motion.div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Reviews Section */}
-        {reviews.length > 0 && (
-          <div className="bg-black/50 rounded-xl border border-primary/20 p-6 my-6">
-            <h2 className="text-xl font-bold text-white mb-4">Reviews ({reviews.filter(r => r.auction).length})</h2>
-            <div className="space-y-4">
-              {reviews.filter(review => review.auction).map((review) => (
-                <ReviewCard
-                  key={review._id}
-                  rating={review.rating}
-                  comment={review.comment}
-                  reviewerId={review.reviewer._id}
-                  reviewerName={
-                    review.reviewer.twitterProfile?.username || 
-                    review.reviewer.username || 
-                    `${review.reviewer.wallets[0]?.slice(0, 6)}...${review.reviewer.wallets[0]?.slice(-4)}`
-                  }
-                  reviewerPfp={
-                    review.reviewer.twitterProfile?.profileImageUrl ||
-                    review.reviewer.pfp_url ||
-                    null
-                  }
-                  auctionName={review.auction.auctionName}
-                  createdAt={review.createdAt}
-                />
+        {/* Stats Cards in Grid */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+        >
+          {[
+            { label: 'Auctions Created', value: profileData?.hostedAuctions.length || 0, icon: Hammer, color: 'from-purple-500 to-pink-500' },
+            { label: 'Auctions Won', value: profileData?.bidsWon.length || 0, icon: Award, color: 'from-yellow-500 to-orange-500' },
+            { label: 'Total Reviews', value: profileData?.totalReviews || 0, icon: Star, color: 'from-blue-500 to-cyan-500' },
+            { label: 'Member Since', value: profileData?.createdAt ? new Date(profileData.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'N/A', icon: Calendar, color: 'from-green-500 to-emerald-500' },
+          ].map((stat, index) => {
+            const Icon = stat.icon
+            return (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 + index * 0.1 }}
+                whileHover={{ y: -4, scale: 1.02 }}
+                className="relative bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 overflow-hidden group cursor-pointer"
+              >
+                <div className={`absolute inset-0 bg-linear-to-br ${stat.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
+                <div className="relative">
+                  <div className={`w-12 h-12 rounded-xl bg-linear-to-br ${stat.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                    <Icon className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="text-3xl font-bold text-white mb-1">
+                    {stat.value}
+                  </div>
+                  <div className="text-white/60 text-sm">{stat.label}</div>
+                </div>
+              </motion.div>
+            )
+          })}
+        </motion.div>
+
+        {/* Quick Actions with Floating Cards */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+        >
+          {[
+            { label: 'My Auctions', path: '/my-auctions', icon: Hammer, gradient: 'from-purple-500 to-pink-500', description: 'Manage your active listings' },
+            { label: 'Won Auctions', path: '/won-bids', icon: Award, gradient: 'from-yellow-500 to-orange-500', description: 'View your winning bids' },
+            { label: 'Create Auction', path: '/create', icon: User, gradient: 'from-green-500 to-emerald-500', description: 'Start a new auction' },
+          ].map((action, index) => {
+            const Icon = action.icon
+            return (
+              <motion.button
+                key={action.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.0 + index * 0.1 }}
+                whileHover={{ y: -8, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigateWithLoader(action.path)}
+                className="relative bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-8 overflow-hidden group"
+              >
+                <div className={`absolute inset-0 bg-linear-to-br ${action.gradient} opacity-0 group-hover:opacity-20 transition-opacity duration-300`} />
+                <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/5 group-hover:scale-150 transition-transform duration-500" />
+                
+                <div className="relative flex flex-col items-center text-center gap-4">
+                  <div className={`w-16 h-16 rounded-2xl bg-linear-to-br ${action.gradient} flex items-center justify-center shadow-lg group-hover:shadow-2xl group-hover:scale-110 transition-all duration-300`}>
+                    <Icon className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-1 group-hover:text-purple-300 transition-colors">
+                      {action.label}
+                    </h3>
+                    <p className="text-white/60 text-sm">{action.description}</p>
+                  </div>
+                </div>
+              </motion.button>
+            )
+          })}
+        </motion.div>
+
+        {/* Wallets Section */}
+        {!context && profileData?.wallets && profileData.wallets.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.3 }}
+            className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 mb-8"
+          >
+            <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <Wallet className="w-5 h-5" />
+              Connected Wallets
+            </h3>
+            <div className="flex flex-wrap gap-3">
+              {profileData.wallets.map((wallet, index) => (
+                <motion.a
+                  key={wallet}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 1.4 + index * 0.05 }}
+                  href={`https://basescan.org/address/${wallet}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-purple-500/30 transition-all flex items-center gap-2 group"
+                >
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <span className="font-mono text-sm">{wallet.slice(0, 6)}...{wallet.slice(-4)}</span>
+                  <svg className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </motion.a>
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <button
-            onClick={() => navigateWithLoader('/my-auctions')}
-            className="bg-black/50 border border-primary/20 rounded-xl flex items-center gap-2 justify-center p-6 hover:bg-primary/10 hover:border-primary/40 transition-colors group"
+        {/* Reviews Section with Timeline Design */}
+        {reviews.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.5 }}
+            className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-8"
           >
-            <RiAuctionLine className="text-3xl text-primary group-hover:scale-110 transition-transform" />
-            <div>
-              <h3 className="text-white font-semibold">My Auctions</h3>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <Star className="w-5 h-5 text-white" />
+                </div>
+                Reviews
+              </h2>
+              <span className="px-4 py-2 bg-white/10 border border-white/10 rounded-xl text-sm font-semibold">
+                {reviews.filter(r => r.auction).length} Total
+              </span>
             </div>
             
-          </button>
-          
-          <button
-            onClick={() => navigateWithLoader('/won-bids')}
-            className="bg-black/50 border border-primary/20 rounded-xl flex items-center gap-2 justify-center p-6 hover:bg-primary/10 hover:border-primary/40 transition-colors group"
-          >
-            <RiMedalLine className="text-3xl text-primary group-hover:scale-110 transition-transform" />
-            <div>
-              <h3 className="text-white font-semibold">Won Auctions</h3>
+            <div className="space-y-4">
+              {reviews.filter(review => review.auction).map((review, index) => (
+                <motion.div
+                  key={review._id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 1.6 + index * 0.05 }}
+                >
+                  <ReviewCard
+                    rating={review.rating}
+                    comment={review.comment}
+                    reviewerId={review.reviewer._id}
+                    reviewerName={
+                      review.reviewer.twitterProfile?.username || 
+                      review.reviewer.username || 
+                      `${review.reviewer.wallets[0]?.slice(0, 6)}...${review.reviewer.wallets[0]?.slice(-4)}`
+                    }
+                    reviewerPfp={
+                      review.reviewer.twitterProfile?.profileImageUrl ||
+                      review.reviewer.pfp_url ||
+                      null
+                    }
+                    auctionName={review.auction.auctionName}
+                    createdAt={review.createdAt}
+                  />
+                </motion.div>
+              ))}
             </div>
-          </button>
-          
-          <button
-            onClick={() => navigateWithLoader('/create')}
-            className="bg-black/50 border border-primary/20 rounded-xl flex items-center gap-2 justify-center p-6 hover:bg-primary/10 hover:border-primary/40 transition-colors group"
-          >
-            <RiUserLine className="text-3xl text-primary group-hover:scale-110 transition-transform" />
-            <div>
-              <h3 className="text-white font-semibold">Create Auction</h3>
-            </div>
-          </button>
-        </div>
-
-        {/* Profile Stats */}
-        <div className="bg-black/50 rounded-xl border border-primary/20 p-6">
-          <h2 className="text-xl font-bold text-white mb-4">Profile Statistics</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center bg-primary/5 py-4 rounded-lg">
-              <div className="text-2xl font-bold text-primary mb-1">{profileData?.hostedAuctions.length || 0}</div>
-              <div className="text-caption text-sm">Auctions Created</div>
-            </div>
-            <div className="text-center bg-primary/5 py-4 rounded-lg">
-              <div className="text-2xl font-bold text-primary mb-1">{profileData?.bidsWon.length || 0}</div>
-              <div className="text-caption text-sm">Auctions Won</div>
-            </div>
-            {/* <div className="text-center">
-              <div className="text-2xl font-bold text-primary mb-1">{statistics?.totalBids || 0}</div>
-              <div className="text-caption text-sm">Total Bids</div>
-            </div> */}
-            {/* <div className="text-center">
-              <div className="text-2xl font-bold text-primary mb-1">{formatVolume(statistics?.totalVolume || 0)}</div>
-              <div className="text-caption text-sm">Total Volume</div>
-            </div> */}
-          </div>
-        </div>
+          </motion.div>
+        )}
                 
-                <TwitterAuthModal 
+        <TwitterAuthModal 
           isOpen={showTwitterModal}
           onClose={() => setShowTwitterModal(false)}
           onSuccess={() => {
             setShowTwitterModal(false);
-            // Refresh profile data after successful Twitter linking
             window.location.reload();
           }}
         />
