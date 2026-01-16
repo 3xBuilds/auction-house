@@ -58,7 +58,7 @@ export function createAuctionFrameUrl(params: {
   durationHours: number;
 }): string {
   // Use our self-hosted transaction frame
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://house-auction.vercel.app";
+  const baseUrl = process.env.NEXT_PUBLIC_URL || "https://house-auction.vercel.app";
   
   // Build URL to our frame endpoint with all auction params
   const frameUrl = new URL(`${baseUrl}/api/bot/frame/create-auction`);

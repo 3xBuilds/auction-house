@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   const minimumBid = searchParams.get("minBid") || "0";
   const durationHours = searchParams.get("duration") || "24";
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://house-auction.vercel.app";
+  const baseUrl = process.env.NEXT_PUBLIC_URL || "https://house-auction.vercel.app";
   
   // The POST URL includes all params so we can reconstruct them
   const postUrl = new URL(`${baseUrl}/api/bot/frame/create-auction`);

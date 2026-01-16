@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 // POST: Called after successful transaction - show success frame
 export async function POST(req: NextRequest) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://house-auction.vercel.app";
+  const baseUrl = process.env.NEXT_PUBLIC_URL || "https://house-auction.vercel.app";
   const miniAppUrl = process.env.NEXT_PUBLIC_MINIAPP_URL || "https://farcaster.xyz/miniapps/0d5aS3cWVprk/house";
   
   // Success image
