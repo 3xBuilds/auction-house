@@ -26,7 +26,7 @@ export default function RootLayout({
         <NProgressProvider>
           <MiniKitContextProvider>
             <Navbar/>
-            <div className="lg:ml-64 pt-12 lg:pt-0">
+            <div className="max-lg:px-3 py-4">
               {children}
             </div>
             <Background />
