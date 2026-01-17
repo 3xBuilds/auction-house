@@ -50,6 +50,7 @@ import LoginWithOAuth from "./utils/twitterConnect";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import AggregateConnector from "./utils/aggregateConnector";
 import ScrollingName from "./utils/ScrollingName";
+import { Users } from "lucide-react";
 
 interface Bidder {
   user: string;
@@ -880,7 +881,7 @@ const LandingAuctions: React.FC = () => {
     const parts = description.split(urlRegex);
     
     return (
-      <p className="text-caption text-sm mb-3 line-clamp-2 min-h-10">
+      <p className="text-caption text-sm mb-3 line-clamp-2 min-h-6">
         {parts.map((part, index) => {
           if (part.match(urlRegex)) {
             const displayText = part.length > 40 
@@ -950,33 +951,33 @@ const LandingAuctions: React.FC = () => {
 
   // Currency Filter Component (reusable)
   const CurrencyFilterButtons = () => (
-    <div className="flex mb-6 overflow-x-hidden">
+    <div className="flex gap-1 justify-end mb-6 overflow-x-hidden">
       <button
         onClick={() => setCurrencyFilter("all")}
-        className={`px-4 py-2 font-medium transition-colors capitalize whitespace-nowrap shrink-0 ${
+        className={`px-3 py-2 font-medium text-white text-sm transition-colors duration-200 capitalize rounded-md whitespace-nowrap shrink-0 border-white/10 ${
           currencyFilter === "all"
-            ? "text-primary border-b-2 border-primary bg-white/5 rounded-md"
-            : "text-caption hover:text-foreground"
+            ? "selected-gradient"
+            : "bg-white/5 border "
         }`}
       >
         All
       </button>
       <button
         onClick={() => setCurrencyFilter("usdc")}
-        className={`px-4 py-2 font-medium transition-colors capitalize whitespace-nowrap shrink-0 ${
+        className={`px-3 py-2 font-medium text-white text-sm transition-colors duration-200 capitalize rounded-md whitespace-nowrap shrink-0 border-white/10 ${
           currencyFilter === "usdc"
-            ? "text-primary border-b-2 border-primary bg-white/5 rounded-md"
-            : "text-caption hover:text-foreground"
+            ? "selected-gradient"
+            : "bg-white/5 border "
         }`}
       >
         USDC
       </button>
       <button
         onClick={() => setCurrencyFilter("creator-coins")}
-        className={`px-4 py-2 font-medium transition-colors capitalize whitespace-nowrap shrink-0 ${
+        className={`px-3 py-2 font-medium text-white text-sm transition-colors duration-200 capitalize rounded-md whitespace-nowrap shrink-0 border-white/10 ${
           currencyFilter === "creator-coins"
-            ? "text-primary border-b-2 border-primary bg-white/5 rounded-md"
-            : "text-caption hover:text-foreground"
+            ? "selected-gradient"
+            : "bg-white/5 border "
         }`}
       >
         Creator Coins
@@ -1043,7 +1044,7 @@ const LandingAuctions: React.FC = () => {
       ) : auctions.length === 0 ? (
         <div className="bg-white/10 rounded-lg shadow-md border border-gray-700 p-8 text-center">
           <div className="flex flex-col items-center gap-4">
-            <div className="w-16 h-16 gradient-button rounded-full flex items-center justify-center">
+            <div className="w-16 h-16 selected-gradient rounded-full flex items-center justify-center">
               <svg
                 className="w-8 h-8 text-white"
                 fill="none"
@@ -1082,343 +1083,73 @@ const LandingAuctions: React.FC = () => {
         {auctions.map((auction, index) => (
           <div
             key={auction._id}
-            className="bg-primary/10 w-full text-white border border-primary rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col h-full"
+            className="bg-black/40 w-full hover:scale-[1.02] duration-200 hover:shadow-lg shadow-primary/10 text-white border border-white/10 rounded-2xl transition-all overflow-hidden flex flex-col h-full cursor-pointer"
+            onClick={() => navigate(`/bid/${auction.blockchainAuctionId}`)}
           >
-            {/* Header with ranking */}
-            <div className="gradient-button p-4 relative shrink-0">
-              <div className="flex items-center justify-between">
-                <span className="bg-white/20 text-white text-sm font-semibold px-3 py-1 rounded-full">
-                  #{index + 1}
-                </span>
-                <div className="flex items-center gap-2 ">
-                  <span className="text-white text-sm">
-                    {formatTimeRemaining(auction.hoursRemaining)} left
-                  </span>
-                  <div className="">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-white hover:bg-white/20"
-                      onClick={() =>
-                        handleShareClick(auction.blockchainAuctionId)
-                      }
-                    >
-                      <IoShareOutline className="h-4 w-4" />
-                    </Button>
-                    {shareDropdownOpen === auction.blockchainAuctionId && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          right: "10px",
-                          top: "40px",
-                          background: "rgba(0, 0, 0, 0.8)",
-                          backdropFilter: "blur(24px)",
-                          borderRadius: "8px",
-                          boxShadow:
-                            "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
-                          zIndex: 50,
-                          width: "180px",
-                          padding: "8px",
-                        }}
-                      >
-                        <button
-                          style={{
-                            width: "100%",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            padding: "8px 12px",
-                            fontSize: "14px",
-                            color: "hsl(var(--primary))",
-                            backgroundColor: "transparent",
-                            borderRadius: "4px",
-                            border: "none",
-                            cursor: "pointer",
-                            transition: "all 0.2s",
-                            whiteSpace: "nowrap",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor =
-                              "rgba(255, 255, 255, 0.1)";
-                            e.currentTarget.style.color = "hsl(var(--primary))";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor =
-                              "transparent";
-                            e.currentTarget.style.color = "hsl(var(--primary))";
-                          }}
-                          onClick={() =>
-                            copyToClipboard(
-                              `${process.env.NEXT_PUBLIC_DOMAIN}/bid/${auction.blockchainAuctionId}`,
-                              "Web URL"
-                            )
-                          }
-                        >
-                          <IoLinkOutline
-                            style={{
-                              height: "16px",
-                              width: "16px",
-                              flexShrink: 0,
-                            }}
-                          />
-                          Web URL
-                        </button>
-                        <button
-                          style={{
-                            width: "100%",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                            padding: "8px 12px",
-                            fontSize: "14px",
-                            color: "hsl(var(--primary))",
-                            backgroundColor: "transparent",
-                            borderRadius: "4px",
-                            border: "none",
-                            cursor: "pointer",
-                            transition: "all 0.2s",
-                            whiteSpace: "nowrap",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor =
-                              "rgba(255, 255, 255, 0.1)";
-                            e.currentTarget.style.color = "hsl(var(--primary))";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor =
-                              "transparent";
-                            e.currentTarget.style.color = "hsl(var(--primary))";
-                          }}
-                          onClick={() =>
-                            copyToClipboard(
-                              `${process.env.NEXT_PUBLIC_MINIAPP_URL}/bid/${auction.blockchainAuctionId}`,
-                              "Miniapp URL"
-                            )
-                          }
-                        >
-                          <IoCopyOutline
-                            style={{
-                              height: "16px",
-                              width: "16px",
-                              flexShrink: 0,
-                            }}
-                          />
-                          Miniapp URL
-                        </button>
-                        {context && (
-                          <button
-                            style={{
-                              width: "100%",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "8px",
-                              padding: "8px 12px",
-                              fontSize: "14px",
-                              color: "hsl(var(--primary))",
-                              backgroundColor: "transparent",
-                              borderRadius: "4px",
-                              border: "none",
-                              cursor: "pointer",
-                              transition: "all 0.2s",
-                              whiteSpace: "nowrap",
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor =
-                                "rgba(255, 255, 255, 0.1)";
-                              e.currentTarget.style.color =
-                                "hsl(var(--primary))";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor =
-                                "transparent";
-                              e.currentTarget.style.color =
-                                "hsl(var(--primary))";
-                            }}
-                            onClick={() => composeCast(auction)}
-                          >
-                            <FaShare
-                              style={{
-                                height: "16px",
-                                width: "16px",
-                                flexShrink: 0,
-                              }}
-                            />
-                            Share Cast
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+            {/* Image */}
+            <div className="relative w-full h-64">
+              <Image
+                src={auction.imageUrl || 'https://via.placeholder.com/400x300'}
+                alt={auction.auctionName}
+                width={400}
+                height={300}
+                className="w-full h-full object-cover"
+                unoptimized
+              />
             </div>
 
             {/* Content */}
-            <div className="p-4 flex flex-col grow">
-              {auction.imageUrl && (
-                <div className="mb-3 -mx-4 -mt-4">
-                  <Image
-                    src={auction.imageUrl}
-                    alt={auction.auctionName}
-                    width={400}
-                    height={250}
-                    className="w-full h-48 object-cover"
-                    unoptimized
-                  />
-                </div>
-              )}
-              
-              <h3 className="text-xl font-semibold text-white mb-2 line-clamp-1">
+            <div className="p-6 flex flex-col grow">
+              <h3 className="text-2xl font-bold text-white mb-2 line-clamp-1">
                 {auction.auctionName}
               </h3>
-
               {auction.description && renderDescription(auction.description)}
+              <div
+                className="flex items-center gap-2 mb-4 cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/user/${auction.hostedBy._id}`);
+                }}
+              >
+                <span className="text-gray-400 text-sm">by</span>
+                <Image
+                  unoptimized
+                  alt="host"
+                  src={
+                    auction.hostedBy.pfp_url ||
+                    `https://api.dicebear.com/5.x/identicon/svg?seed=${auction.hostedBy.wallet}`
+                  }
+                  width={20}
+                  height={20}
+                  className="rounded-full w-5 h-5 aspect-square object-cover"
+                />
+                <span className="text-primary text-sm font-medium">
+                  {auction.hostedBy.username
+                    ? `@${auction.hostedBy.username}`
+                    : auction.hostedBy.display_name || `User ${auction.hostedBy.socialId}`}
+                </span>
+              </div>
 
-              <div className="space-y-3 grow flex flex-col">
-                {/* Highest bid */}
-                <div className="flex justify-between items-center">
-                  {auction.highestBid == 0 ? (
-                    <>
-                      <span className="text-caption text-sm w-[30%]">
-                        Min Bid:
-                      </span>
-                      <span className="font-semibold text-md text-primary text-nowrap text-truncate w-[70%] text-end overflow-hidden">
-                        {formatBidAmount(auction.minimumBid, auction.currency)}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-caption text-sm w-[30%]">
-                        Highest Bid:
-                      </span>
-                      <span className="font-semibold text-md text-primary text-nowrap text-truncate w-[70%] text-end overflow-hidden">
-                        {formatBidAmount(auction.highestBid, auction.currency)}
-                      </span>
-                    </>
-                  )}
-                </div>
-
-                {/* Stats */}
-                <div className="flex justify-between items-center">
-                  <div className="text-caption text-sm">Participants</div>
-                  <div className="font-semibold text-md text-white">
-                    {auction.participantCount}
-                  </div>
-                </div>
-
-                {/* Top Bidder - Always reserve space */}
-                <div className="flex justify-between items-center min-h-8">
-                  {auction.topBidder ? (
-                    <>
-                      <div className="text-caption text-sm">Top Bidder</div>
-                      <div onClick={()=> auction.topBidder?._id && navigate(`/user/${auction.topBidder._id}`)} className="font-semibold text-md text-white bg-white/10 rounded-full px-2 py-1 flex gap-2 max-lg:max-w-52 truncate">
-                        <Image
-                          unoptimized
-                          alt="top bidder"
-                          src={auction.topBidder?.pfp_url || ""}
-                          width={100}
-                          height={100}
-                          className="rounded-full w-6 aspect-square"
-                        />
-                        <div className="hidden lg:block">
-                          <h3 className="text-md">
-                            {auction.topBidder?.username || "User "+ auction.topBidder.socialId}
-                          </h3>
-                        </div>
-                        <div className="lg:hidden">
-                          <ScrollingName 
-                            name={auction.topBidder?.username || "User "+ auction.topBidder.socialId}
-                            className="max-w-40 text-md"
-                          />
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-caption text-sm">Top Bidder</div>
-                      <div className="font-semibold text-md text-caption">
-                        No bids yet
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Spacer to push content to bottom */}
-                <div className="grow"></div>
-
-                {/* Host info */}
-                <div className="border-t pt-3 mt-auto">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-caption">Hosted by:</span>
-                    <div
-                      className="flex items-center gap-2 text-primary hover:text-primary cursor-pointer font-bold transition-colors duration-200 justify-center"
-                      onClick={() =>
-                        navigate(`/user/${auction.hostedBy._id}`)
-                      }
-                    >
-                      <Image
-                        unoptimized
-                        alt="host"
-                        src={
-                          auction.hostedBy.pfp_url ||
-                          `https://api.dicebear.com/5.x/identicon/svg?seed=${auction.hostedBy.wallet}`
-                        }
-                        width={24}
-                        height={24}
-                        className="rounded-full w-6 h-6 aspect-square object-cover"
-                      />
-                      <div className="hidden lg:block">
-                        <span>
-                          {auction.hostedBy.display_name ||
-                            (auction.hostedBy.username
-                              ? `@${auction.hostedBy.username}`
-                              : auction.hostedBy.socialId)}
-                        </span>
-                      </div>
-                      <div className="lg:hidden flex ">
-                        <ScrollingName 
-                          name={auction.hostedBy.display_name ||
-                            (auction.hostedBy.username
-                              ? `@${auction.hostedBy.username}`
-                              : auction.hostedBy.socialId) as string}
-                          className="max-w-40"
-                        />
-                        
-                      </div>
-
-                      {(auction.hostedBy.averageRating ?? 0) > 0 && (auction.hostedBy.totalReviews ?? 0) > 0 && (
-                        <RatingCircle
-                          rating={auction.hostedBy.averageRating}
-                          totalReviews={auction.hostedBy.totalReviews}
-                          size="sm"
-                          showLabel={false}
-                        />
-                      )}
-
+              <div className="border-t border-white/10 pt-4 mt-auto space-y-3 flex justify-between items-center">
+              <div className="flex flex-col justify-center items-start">
+                  <span className="text-gray-400 text-sm">
+                    {auction.highestBid > 0 ? 'Current Bid' : 'Minimum Bid'}
+                  </span>
+                  <div className="text-left">
+                    <div className="text-white font-bold text-lg">
+                      {auction.highestBid > 0 ? auction.highestBid : auction.minimumBid} {auction.currency}
+                    </div>
+                    <div className="text-gray-400 text-xs">
+                      ≈ ${((auction.highestBid > 0 ? auction.highestBid : auction.minimumBid) * (auction.currency === 'USDC' ? 1 : 3500)).toLocaleString()}
                     </div>
                   </div>
                 </div>
-
-                {/* Action button */}
-                <div className="flex justify-center gap-2 px-1">
-                  <Button
-                    variant={"default"}
-                    className="w-[70%] h-12 hover:opacity-90 text-white font-bold text-lg"
-                    onClick={() => openBidDrawer(auction)}
-                  >
-                    Bid
-                  </Button>
-                  <Button
-                    variant={"outline"}
-                    className="w-[30%] h-12 hover:opacity-90 text-lg"
-                    onClick={() => {
-                      // Navigate to auction detail page
-                      navigate(`/bid/${auction.blockchainAuctionId}`);
-                    }}
-                  >
-                    View
-                  </Button>
+                <div className="flex items-center justify-between bg-white/10 rounded-full border border-white/30 px-2 py-1 w-16">
+                  <Users className="w-4 h-4 bg-white/50" />
+                  <span className="text-white text-sm font-semibold">{auction.participantCount}</span>
                 </div>
+                
+                
               </div>
             </div>
           </div>
