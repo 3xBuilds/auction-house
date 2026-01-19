@@ -6,15 +6,18 @@ const nextConfig: NextConfig = {
    
   },
   
+  // Increase API body size limit for image uploads
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb', // Adjust as needed (e.g., '50mb')
+    },
+  },
+  
   images: {
     remotePatterns: [
       {
         protocol: "https",
         hostname: "*.farcaster.xyz",
-      },
-      {
-        protocol: "https",
-        hostname: "api.dicebear.com",
       },
       {
         protocol: "https",
@@ -35,14 +38,6 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "abs.twimg.com",
-      },
-      {
-        protocol: "https",
-        hostname: "*.s3.*.amazonaws.com",
-      },
-      {
-        protocol: "https",
-        hostname: "*.cloudfront.net",
       },
     ],
   },
