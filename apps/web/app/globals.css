@@ -184,5 +184,5 @@ select {
 
 /* Selected Gradient Class */
 .selected-gradient {
-  @apply bg-gradient-to-br from-primary to-secondary shadow-lg shadow-primary/30;
+  @apply bg-gradient-to-br from-primary to-secondary shadow-lg shadow-primary/20;
 }

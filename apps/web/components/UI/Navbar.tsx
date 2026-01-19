@@ -11,10 +11,13 @@ import {
   QrCode,
   User,
   PlusCircle,
+  Clock,
 } from "lucide-react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import LoginWithOAuth from "../utils/twitterConnect";
 import AggregateConnector from "../utils/aggregateConnector";
+import { useCallback, useState, useEffect } from "react";
+import { getAccessToken } from '@privy-io/react-auth';
 
 export default function Navbar() {
   const { wallets } = useWallets();
@@ -36,6 +39,49 @@ export default function Navbar() {
   const router = useRouter();
 
   const { authenticated } = usePrivy();
+
+  const [pastDrawerOpen, setPastDrawerOpen] = useState(false);
+  const [pastAuctions, setPastAuctions] = useState<any[]>([]);
+  const [pastLoading, setPastLoading] = useState(false);
+  const [pastError, setPastError] = useState<string | null>(null);
+
+  const fetchPastAuctions = useCallback(async () => {
+    try {
+      setPastLoading(true);
+      setPastError(null);
+      const response = await fetch('/api/auctions/getEnded?limit=5');
+      const data = await response.json();
+
+      if (data.success) {
+        setPastAuctions(data.auctions || []);
+      } else {
+        setPastError(data.message || data.error || 'Failed to load past auctions');
+      }
+    } catch (error) {
+      console.error('Error fetching past auctions:', error);
+      setPastError('Network error: Unable to load past auctions');
+    } finally {
+      setPastLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (pastDrawerOpen) {
+      fetchPastAuctions();
+    }
+  }, [pastDrawerOpen, fetchPastAuctions]);
+
+  const formatEndedLabel = (endDate: string) => {
+    const end = new Date(endDate);
+    const diffMs = Date.now() - end.getTime();
+    if (diffMs < 3600_000) return 'Just ended';
+    const diffHours = Math.floor(diffMs / 3600_000);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}d ago`;
+    const diffWeeks = Math.floor(diffDays / 7);
+    return `${diffWeeks}w ago`;
+  };
 
   return (
     <>
@@ -92,6 +138,19 @@ export default function Navbar() {
               </span>
             </a>
           )}
+
+          {/* Past Auctions */}
+          <button
+            onClick={() => setPastDrawerOpen(true)}
+            className="flex flex-col items-center justify-center flex-1"
+          >
+            <div className={` ${pastDrawerOpen && "selected-gradient w-7 flex items-center justify-center aspect-square rounded-md"} `}>
+              <Clock className={`w-5 h-5 mb-0.5 ${pastDrawerOpen ? "text-white" : "text-white/60"}`} />
+            </div>
+            <span className={`text-[10px] ${pastDrawerOpen ? "text-primary" : "text-white/60"}`}>
+              Past
+            </span>
+          </button>
 
           {/* Info */}
           <a
@@ -166,6 +225,18 @@ export default function Navbar() {
             <Trophy className="w-6 h-6" />
           </a>
 
+          {/* Past Auctions */}
+          <button
+            onClick={() => setPastDrawerOpen(true)}
+            className={`p-2 w-[48px] aspect-square flex items-center justify-center rounded-xl transition-all hover:scale-105 duration-200 ${
+              pastDrawerOpen
+                ? "text-white selected-gradient"
+                : "text-white hover:text-white hover:bg-white/10 bg-white/5"
+            }`}
+          >
+            <Clock className="w-6 h-6" />
+          </button>
+
           {/* Information */}
           <a
             href="/info"
@@ -215,6 +286,140 @@ export default function Navbar() {
         {/* Right - Empty space for balance */}
         <div className="w-[200px]"></div>
       </div>
+
+      {/* Past Auctions Drawer */}
+      {pastDrawerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setPastDrawerOpen(false)}
+          />
+          <div className="relative z-50 w-full max-w-3xl bg-background/95 border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
+            <div className="px-6 py-5 max-lg:p-3 border-b border-white/10 flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-white/50 mb-1">Spotlight</p>
+                <h3 className="text-2xl font-bold bg-gradient-to-br from-yellow-400 to-orange-500 bg-clip-text text-transparent">Past Auctions</h3>
+                <p className="text-sm text-white/70">Recently ended auctions and final bids</p>
+              </div>
+              <button
+                onClick={() => setPastDrawerOpen(false)}
+                className="text-white/70 hover:text-white text-sm font-medium"
+              >
+                Close
+              </button>
+            </div>
+            <div className="max-h-[70vh] overflow-y-auto px-6 py-5 max-md:p-3 space-y-5">
+              {pastLoading && (
+                <div className="text-center text-white/70 text-sm">Loading past auctions...</div>
+              )}
+
+              {!pastLoading && pastError && (
+                <div className="text-center space-y-3">
+                  <p className="text-red-400 text-sm">{pastError}</p>
+                  <button
+                    onClick={fetchPastAuctions}
+                    className="px-4 py-2 text-sm bg-white/10 hover:bg-white/20 rounded-md"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
+
+              {!pastLoading && !pastError && pastAuctions.length === 0 && (
+                <div className="text-center text-white/70 text-sm">
+                  No past auctions to display yet.
+                </div>
+              )}
+
+              {!pastLoading && !pastError && pastAuctions.length > 0 && (
+                <div className="space-y-4">
+                  {pastAuctions.map((auction) => (
+                    <div key={auction._id} className="bg-black backdrop-blur-lg border border-yellow-400/20 shadow-xl shadow-orange-500/10 rounded-2xl p-5 max-lg:p-3 flex flex-col gap-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-1">
+                          <p className="text-xs uppercase tracking-wide text-white/50">Ended {formatEndedLabel(auction.endDate)}</p>
+                          <h4 className="text-lg font-semibold text-white">{auction.auctionName}</h4>
+                          <p className="text-xs text-white/60">
+                            Hosted by {auction.hostedBy?.display_name || (auction.hostedBy?.username ? `@${auction.hostedBy.username}` : "Unknown")}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => navigateWithLoader(`/bid/${auction.blockchainAuctionId}`)}
+                          className="text-xs px-3 py-1 bg-white/10 hover:bg-white/20 rounded-md"
+                        >
+                          Details
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3 text-sm text-white/80">
+                        <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                          <p className="text-xs text-white/60">Winning Bid</p>
+                          <p className="text-white font-semibold text-base">
+                            {auction.highestBid.toLocaleString()} {auction.currency}
+                          </p>
+                        </div>
+                        <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                          <p className="text-xs text-white/60">Min Bid</p>
+                          <p className="text-white font-semibold text-base">
+                            {auction.minimumBid.toLocaleString()} {auction.currency}
+                          </p>
+                        </div>
+                        <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+                          <p className="text-xs text-white/60">Participants</p>
+                          <p className="text-white font-semibold text-base">
+                            {auction.participantCount}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2 text-sm">
+                        <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between">
+                          <div>
+                            <p className="text-xs text-white/60">Winner</p>
+                            <p className="text-white font-semibold text-base">
+                              {auction.topBidder?.username || (auction.topBidder?.socialId ? `User ${auction.topBidder.socialId}` : "No winner")}
+                            </p>
+                          </div>
+                          {auction.topBidder && (
+                            <button
+                              onClick={() => navigateWithLoader(`/user/${auction.topBidder?._id}`)}
+                              className="text-xs px-3 py-1 text-white/70 hover:text-white"
+                            >
+                              View
+                            </button>
+                          )}
+                        </div>
+                        <div className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between">
+                          <div>
+                            <p className="text-xs text-white/60">Host</p>
+                            <p className="text-white font-semibold text-base">
+                              {auction.hostedBy?.display_name || (auction.hostedBy?.username ? `@${auction.hostedBy.username}` : auction.hostedBy?.socialId || "Unknown")}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => navigateWithLoader(`/user/${auction.hostedBy?._id}`)}
+                            className="text-xs px-3 py-1 text-white/70 hover:text-white"
+                          >
+                            View
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 border-t border-white/10 flex justify-end">
+              <button
+                onClick={() => setPastDrawerOpen(false)}
+                className="px-6 py-2 bg-white/10 hover:bg-white/20 text-white rounded-md transition"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

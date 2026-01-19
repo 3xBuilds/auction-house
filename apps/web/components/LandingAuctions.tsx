@@ -51,6 +51,8 @@ import { usePrivy, useWallets } from "@privy-io/react-auth";
 import AggregateConnector from "./utils/aggregateConnector";
 import ScrollingName from "./utils/ScrollingName";
 import { Users } from "lucide-react";
+import AuctionCard from "./AuctionCard";
+import LeaderboardSidebar from "./LeaderboardSidebar";
 
 interface Bidder {
   user: string;
@@ -907,42 +909,37 @@ const LandingAuctions: React.FC = () => {
   };
 
   const SkeletonCard = () => (
-    <div className="bg-gray-400/10 w-full border border-gray-300 rounded-xl shadow-sm overflow-hidden animate-pulse">
-      {/* Header */}
-      <div className="bg-gray-700 p-4">
-        <div className="flex items-center justify-between">
-          <div className="bg-gray-600 h-6 w-12 rounded-full"></div>
-          <div className="bg-gray-600 h-4 w-24 rounded"></div>
+    <div className="bg-black/40 w-full text-white border border-secondary/10 rounded-2xl transition-all overflow-hidden flex flex-col animate-pulse">
+      {/* Image skeleton */}
+      <div className="relative w-full h-64 bg-secondary/20"></div>
+
+      {/* Content skeleton */}
+      <div className="p-6 flex flex-col grow">
+        {/* Title */}
+        <div className="h-8 bg-secondary/20 rounded w-3/4 mb-2"></div>
+        
+        {/* Description with min-h-6 to match actual card */}
+        <div className="mb-3 min-h-6">
+          <div className="h-4 bg-secondary/20 rounded w-full"></div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="p-4 space-y-3">
-        <div className="bg-gray-700 h-6 w-3/4 rounded"></div>
-        <div className="bg-gray-700 h-4 w-full rounded"></div>
-        <div className="bg-gray-700 h-4 w-5/6 rounded"></div>
+        {/* Host info */}
+        <div className="flex items-center gap-2 mb-4">
+          <div className="h-3 bg-secondary/20 rounded w-6"></div>
+          <div className="w-5 h-5 bg-secondary/20 rounded-full"></div>
+          <div className="h-3 bg-secondary/20 rounded w-24"></div>
+        </div>
 
-        <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <div className="bg-gray-700 h-4 w-16 rounded"></div>
-            <div className="bg-gray-700 h-4 w-20 rounded"></div>
+        {/* Bottom section */}
+        <div className="border-t border-secondary/10 pt-4 mt-auto space-y-3 flex justify-between items-center">
+          <div className="flex flex-col justify-center items-start">
+            <div className="h-4 bg-secondary/20 rounded w-20 mb-1"></div>
+            <div className="h-6 bg-secondary/20 rounded w-28 mb-1"></div>
+            <div className="h-3 bg-secondary/20 rounded w-16"></div>
           </div>
-
-          <div className="flex justify-between items-center">
-            <div className="bg-gray-700 h-4 w-20 rounded"></div>
-            <div className="bg-gray-700 h-4 w-8 rounded"></div>
-          </div>
-
-          <div className="border-t pt-3">
-            <div className="flex items-center justify-between">
-              <div className="bg-gray-700 h-4 w-16 rounded"></div>
-              <div className="bg-gray-700 h-4 w-24 rounded"></div>
-            </div>
-          </div>
-
-          <div className="flex justify-center gap-2 px-1">
-            <div className="bg-gray-700 h-12 w-[70%] rounded"></div>
-            <div className="bg-gray-700 h-12 w-[30%] rounded"></div>
+          <div className="flex items-center justify-between bg-secondary/20 rounded-full border border-secondary/30 px-2 py-1 w-16">
+            <div className="w-4 h-4 bg-secondary/20 rounded-full"></div>
+            <div className="h-4 bg-secondary/20 rounded w-6"></div>
           </div>
         </div>
       </div>
@@ -954,7 +951,7 @@ const LandingAuctions: React.FC = () => {
     <div className="flex gap-1 justify-end mb-6 overflow-x-hidden">
       <button
         onClick={() => setCurrencyFilter("all")}
-        className={`px-3 py-2 font-medium text-white text-sm transition-colors duration-200 capitalize rounded-md whitespace-nowrap shrink-0 border-white/10 ${
+        className={`px-3 py-2 font-medium text-white text-sm transition-colors duration-200 capitalize rounded-lg whitespace-nowrap shrink-0 border-white/10 ${
           currencyFilter === "all"
             ? "selected-gradient"
             : "bg-white/5 border "
@@ -964,7 +961,7 @@ const LandingAuctions: React.FC = () => {
       </button>
       <button
         onClick={() => setCurrencyFilter("usdc")}
-        className={`px-3 py-2 font-medium text-white text-sm transition-colors duration-200 capitalize rounded-md whitespace-nowrap shrink-0 border-white/10 ${
+        className={`px-3 py-2 font-medium text-white text-sm transition-colors duration-200 capitalize rounded-lg whitespace-nowrap shrink-0 border-white/10 ${
           currencyFilter === "usdc"
             ? "selected-gradient"
             : "bg-white/5 border "
@@ -974,7 +971,7 @@ const LandingAuctions: React.FC = () => {
       </button>
       <button
         onClick={() => setCurrencyFilter("creator-coins")}
-        className={`px-3 py-2 font-medium text-white text-sm transition-colors duration-200 capitalize rounded-md whitespace-nowrap shrink-0 border-white/10 ${
+        className={`px-3 py-2 font-medium text-white text-sm transition-colors duration-200 capitalize rounded-lg whitespace-nowrap shrink-0 border-white/10 ${
           currencyFilter === "creator-coins"
             ? "selected-gradient"
             : "bg-white/5 border "
@@ -986,28 +983,24 @@ const LandingAuctions: React.FC = () => {
   );
 
   return (
-    <div className="w-full max-lg:mx-auto mt-2 pb-24">
-      <div className="flex flex-col items-start justify-between mb-8">
-        <h2 className="text-2xl font-bold gradient-text">Latest Auctions</h2>
-        <p className="text-caption text-sm mt-2">
-          Discover the most active auctions happening right now
-        </p>
-      </div>
+    <div className="w-full mt-10 pb-24">
+      {/* Main Content */}
+      <div className="flex-1 max-lg:mx-auto lg:w-[1000px]">
+        <div className="flex max-lg:flex-col lg:items-center justify-between lg:mb-4 max-lg:gap-4">
+          <h2 className="text-2xl font-bold gradient-text">Latest Auctions</h2>
+          {/* Currency Filter */}
+        <CurrencyFilterButtons />
+        </div>
 
-      {/* Currency Filter */}
-      <CurrencyFilterButtons />
+        
 
+      <div className="w-full">
       {loading ? (
-        <div className="bg-white/10 rounded-lg shadow-md border border-gray-700 p-8 text-center">
-          <div className="flex flex-col items-center gap-4">
-            <RiLoader5Fill className="animate-spin text-4xl text-primary" />
-            <div>
-              <h3 className="text-lg font-semibold mb-2">Loading Auctions</h3>
-              <p className="text-caption">
-                Fetching the latest auction data...
-              </p>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
         </div>
       ) : error ? (
         <div className="bg-white/10 rounded-lg shadow-md border border-gray-700 p-8 text-center">
@@ -1042,9 +1035,9 @@ const LandingAuctions: React.FC = () => {
           </div>
         </div>
       ) : auctions.length === 0 ? (
-        <div className="bg-white/10 rounded-lg shadow-md border border-gray-700 p-8 text-center">
+        <div className="bg-white/10 rounded-lg shadow-md border border-primary/10 p-8 text-center">
           <div className="flex flex-col items-center gap-4">
-            <div className="w-16 h-16 selected-gradient rounded-full flex items-center justify-center">
+            <div className="w-16 h-16 gradient-button rounded-full flex items-center justify-center">
               <svg
                 className="w-8 h-8 text-white"
                 fill="none"
@@ -1079,80 +1072,14 @@ const LandingAuctions: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="w-full grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
         {auctions.map((auction, index) => (
-          <div
+          <AuctionCard
             key={auction._id}
-            className="bg-black/40 w-full hover:scale-[1.02] duration-200 hover:shadow-lg shadow-primary/10 text-white border border-white/10 rounded-2xl transition-all overflow-hidden flex flex-col h-full cursor-pointer"
-            onClick={() => navigate(`/bid/${auction.blockchainAuctionId}`)}
-          >
-            {/* Image */}
-            <div className="relative w-full h-64">
-              <Image
-                src={auction.imageUrl || 'https://via.placeholder.com/400x300'}
-                alt={auction.auctionName}
-                width={400}
-                height={300}
-                className="w-full h-full object-cover"
-                unoptimized
-              />
-            </div>
-
-            {/* Content */}
-            <div className="p-6 flex flex-col grow">
-              <h3 className="text-2xl font-bold text-white mb-2 line-clamp-1">
-                {auction.auctionName}
-              </h3>
-              {auction.description && renderDescription(auction.description)}
-              <div
-                className="flex items-center gap-2 mb-4 cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/user/${auction.hostedBy._id}`);
-                }}
-              >
-                <span className="text-gray-400 text-sm">by</span>
-                <Image
-                  unoptimized
-                  alt="host"
-                  src={
-                    auction.hostedBy.pfp_url ||
-                    `https://api.dicebear.com/5.x/identicon/svg?seed=${auction.hostedBy.wallet}`
-                  }
-                  width={20}
-                  height={20}
-                  className="rounded-full w-5 h-5 aspect-square object-cover"
-                />
-                <span className="text-primary text-sm font-medium">
-                  {auction.hostedBy.username
-                    ? `@${auction.hostedBy.username}`
-                    : auction.hostedBy.display_name || `User ${auction.hostedBy.socialId}`}
-                </span>
-              </div>
-
-              <div className="border-t border-white/10 pt-4 mt-auto space-y-3 flex justify-between items-center">
-              <div className="flex flex-col justify-center items-start">
-                  <span className="text-gray-400 text-sm">
-                    {auction.highestBid > 0 ? 'Current Bid' : 'Minimum Bid'}
-                  </span>
-                  <div className="text-left">
-                    <div className="text-white font-bold text-lg">
-                      {auction.highestBid > 0 ? auction.highestBid : auction.minimumBid} {auction.currency}
-                    </div>
-                    <div className="text-gray-400 text-xs">
-                      ≈ ${((auction.highestBid > 0 ? auction.highestBid : auction.minimumBid) * (auction.currency === 'USDC' ? 1 : 3500)).toLocaleString()}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between bg-white/10 rounded-full border border-white/30 px-2 py-1 w-16">
-                  <Users className="w-4 h-4 bg-white/50" />
-                  <span className="text-white text-sm font-semibold">{auction.participantCount}</span>
-                </div>
-                
-                
-              </div>
-            </div>
-          </div>
+            auction={auction}
+            onNavigate={navigate}
+            renderDescription={renderDescription}
+          />
         ))}
 
         {/* Skeleton cards for loading more */}
@@ -1200,7 +1127,9 @@ const LandingAuctions: React.FC = () => {
         )}
       </div>
       )}
-
+      </div>
+      </div>
+      
         {/* Bid Drawer */}
         <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
           <DrawerContent className="drawer-content max-h-[85vh] h-auto flex flex-col">

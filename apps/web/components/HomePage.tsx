@@ -6,6 +6,7 @@ import PageLayout from "@/components/UI/PageLayout";
 import Heading from "@/components/UI/Heading";
 import Welcome from "@/components/Welcome";
 import InfoCarousel from "@/components/InfoCarousel";
+import LeaderboardSidebar from "./LeaderboardSidebar";
 // import { UsernameManager } from "@/components/UI/UsernameManager";
 
 NProgress.configure({ showSpinner: false });
@@ -58,8 +59,13 @@ export default function HomePage() {
     >
       {/* <UsernameManager /> */}
       <Welcome/>
-      <InfoCarousel/>
-      <LandingAuctions/>
+      {/* <InfoCarousel/> */}
+      <div className="flex items-start">
+        <LandingAuctions/>
+        {/* Sidebar */}
+              <LeaderboardSidebar />
+      </div>
+      
      
     </PageLayout>
   );
