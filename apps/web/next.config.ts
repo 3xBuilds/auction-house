@@ -6,6 +6,13 @@ const nextConfig: NextConfig = {
    
   },
   
+  // Increase API body size limit for image uploads
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb', // Adjust as needed (e.g., '50mb')
+    },
+  },
+  
   images: {
     remotePatterns: [
       {

@@ -5,6 +5,9 @@ import User from '@/utils/schemas/User';
 import { authenticateRequest } from '@/utils/authService';
 import { scheduleAuctionReminders, scheduleAuctionEnd } from '@repo/queue';
 
+// Increase body size limit for image uploads
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   console.log('Verifying token in auction creation route');
 
