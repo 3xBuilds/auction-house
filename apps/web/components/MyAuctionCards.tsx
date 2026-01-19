@@ -161,7 +161,7 @@ export default function MyAuctionCards() {
       console.log('✅ Auction ended successfully, fee distribution initiated server-side');
       
       if (loadingToastId) {
-        toast.success("Auction ended successfully! Fee distribution running in background...", {
+        toast.success("Auction ended successfully!", {
           id: loadingToastId,
         });
       }

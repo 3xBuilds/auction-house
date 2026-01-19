@@ -53,12 +53,14 @@ interface AuctionCardProps {
   auction: Auction;
   onNavigate: (path: string) => void;
   renderDescription: (description: string) => React.ReactNode;
+  onBidClick?: (auction: Auction) => void;
 }
 
 const AuctionCard: React.FC<AuctionCardProps> = ({
   auction,
   onNavigate,
   renderDescription,
+  onBidClick,
 }) => {
   return (
     <div
@@ -112,35 +114,48 @@ const AuctionCard: React.FC<AuctionCardProps> = ({
           </span>
         </div>
 
-        <div className="border-t border-primary/10 pt-4 mt-auto space-y-3 flex justify-between items-center">
-          <div className="flex flex-col justify-center items-start">
-            <span className="text-gray-400 text-sm">
-              {auction.highestBid > 0 ? "Current Bid" : "Minimum Bid"}
-            </span>
-            <div className="text-left">
-              <div className="text-white font-bold text-lg">
-                {auction.highestBid > 0
-                  ? auction.highestBid
-                  : auction.minimumBid}{" "}
-                {auction.currency}
-              </div>
-              <div className="text-gray-400 text-xs">
-                ≈ $
-                {(
-                  (auction.highestBid > 0
+        <div className="border-t border-primary/10 pt-4 mt-auto space-y-3">
+          <div className="flex justify-between items-center">
+            <div className="flex flex-col justify-center items-start">
+              <span className="text-gray-400 text-sm">
+                {auction.highestBid > 0 ? "Current Bid" : "Minimum Bid"}
+              </span>
+              <div className="text-left">
+                <div className="text-white font-bold text-lg">
+                  {auction.highestBid > 0
                     ? auction.highestBid
-                    : auction.minimumBid) *
-                  (auction.currency === "USDC" ? 1 : 3500)
-                ).toLocaleString()}
+                    : auction.minimumBid}{" "}
+                  {auction.currency}
+                </div>
+                <div className="text-gray-400 text-xs">
+                  ≈ $
+                  {(
+                    (auction.highestBid > 0
+                      ? auction.highestBid
+                      : auction.minimumBid) *
+                    (auction.currency === "USDC" ? 1 : 3500)
+                  ).toLocaleString()}
+                </div>
               </div>
             </div>
+            <div className="flex items-center justify-between bg-white/10 rounded-full border border-white/30 px-2 py-1 w-16">
+              <Users className="w-4 h-4 text-white/50" />
+              <span className="text-white text-sm font-semibold">
+                {auction.participantCount}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center justify-between bg-white/10 rounded-full border border-white/30 px-2 py-1 w-16">
-            <Users className="w-4 h-4 text-white/50" />
-            <span className="text-white text-sm font-semibold">
-              {auction.participantCount}
-            </span>
-          </div>
+          {onBidClick && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onBidClick(auction);
+              }}
+              className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+            >
+              Place Bid
+            </button>
+          )}
         </div>
       </div>
     </div>

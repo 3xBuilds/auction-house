@@ -4,7 +4,8 @@ import { RiLoader5Fill, RiRefreshLine } from 'react-icons/ri';
 import TopRevenueCard from './utils/TopRevenueCard';
 import HighestBiddersCard from './utils/HighestBiddersCard';
 import PastAuctionsCard from './utils/PastAuctionsCard';
-import { ClockIcon, DiamondIcon, Trophy, TrophyIcon } from 'lucide-react';
+import RecentBidsCard from './utils/RecentBidsCard';
+import { ClockIcon, DiamondIcon, Trophy, TrophyIcon, ActivityIcon } from 'lucide-react';
 
 interface TopRevenueUser {
   _id: string;
@@ -68,14 +69,31 @@ interface PastAuction {
   bidCount: number;
 }
 
+interface RecentBid {
+  _id: string;
+  bidderName: string;
+  bidderPfp: string;
+  bidderWallet: string;
+  socialId: string;
+  socialPlatform: string;
+  auctionName: string;
+  blockchainAuctionId: string;
+  bidAmount: number;
+  usdcValue: number;
+  currency: string;
+  bidTimestamp: string;
+}
+
 export default function LeaderboardSidebar() {
   const [topRevenue, setTopRevenue] = useState<TopRevenueUser[]>([]);
   const [highestBids, setHighestBids] = useState<HighestBid[]>([]);
   const [pastAuctions, setPastAuctions] = useState<PastAuction[]>([]);
+  const [recentBids, setRecentBids] = useState<RecentBid[]>([]);
   
   const [loadingRevenue, setLoadingRevenue] = useState(true);
   const [loadingBids, setLoadingBids] = useState(true);
   const [loadingAuctions, setLoadingAuctions] = useState(true);
+  const [loadingRecentBids, setLoadingRecentBids] = useState(true);
   
   const [error, setError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
@@ -84,11 +102,12 @@ export default function LeaderboardSidebar() {
     try {
       setError(null);
       
-      // Fetch all three APIs in parallel for optimal performance
-      const [revenueRes, bidsRes, auctionsRes] = await Promise.all([
+      // Fetch all APIs in parallel for optimal performance
+      const [revenueRes, bidsRes, auctionsRes, recentBidsRes] = await Promise.all([
         fetch('/api/leaderboard/top-revenue'),
         fetch('/api/leaderboard/highest-bids'),
-        fetch('/api/auctions/getEnded?limit=1')
+        fetch('/api/auctions/getEnded?limit=1'),
+        fetch('/api/leaderboard/recent-bids')
       ]);
 
       // Process revenue data
@@ -118,6 +137,15 @@ export default function LeaderboardSidebar() {
       }
       setLoadingAuctions(false);
 
+      // Process recent bids data
+      if (recentBidsRes.ok) {
+        const recentBidsData = await recentBidsRes.json();
+        if (recentBidsData.success) {
+          setRecentBids(recentBidsData.data);
+        }
+      }
+      setLoadingRecentBids(false);
+
       setLastRefresh(new Date());
     } catch (err) {
       console.error('Error fetching sidebar data:', err);
@@ -125,6 +153,7 @@ export default function LeaderboardSidebar() {
       setLoadingRevenue(false);
       setLoadingBids(false);
       setLoadingAuctions(false);
+      setLoadingRecentBids(false);
     }
   }, []);
 
@@ -146,6 +175,7 @@ export default function LeaderboardSidebar() {
     setLoadingRevenue(true);
     setLoadingBids(true);
     setLoadingAuctions(true);
+    setLoadingRecentBids(true);
     fetchSidebarData();
   };
 
@@ -159,7 +189,7 @@ export default function LeaderboardSidebar() {
           className="p-2 hover:bg-white/10 rounded-lg transition-colors"
           title="Refresh data"
         >
-          <RiRefreshLine className={`text-primary ${loadingRevenue || loadingBids || loadingAuctions ? 'animate-spin' : ''}`} />
+          <RiRefreshLine className={`text-primary ${loadingRevenue || loadingBids || loadingAuctions || loadingRecentBids ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
@@ -186,6 +216,15 @@ export default function LeaderboardSidebar() {
         </h3>
         <HighestBiddersCard bids={highestBids} loading={loadingBids} />
       </div> */}
+
+      {/* Recent Bids */}
+      <div className="bg-primary/5 border border-primary/10 rounded-xl p-4">
+        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+          <span className="text-green-500 bg-green-500/20 rounded-lg p-2"><ActivityIcon className='w-6 h-6' /></span>
+          Recent Activity
+        </h3>
+        <RecentBidsCard bids={recentBids} loading={loadingRecentBids} />
+      </div>
 
       {/* Past Auctions */}
       <div className="bg-primary/5 border border-primary/10 rounded-xl p-4">

@@ -65,19 +65,19 @@ export default function PastAuctionsCard({ auctions, loading }: PastAuctionsCard
   if (loading) {
     return (
       <div className="space-y-3">
-        {[1, 2, 3].map((i) => (
+        
           <div
-            key={i}
+            
             className="p-3 bg-white/5 rounded-lg animate-pulse"
           >
-            <div className="h-4 bg-gray-700 rounded w-3/4 mb-2"></div>
-            <div className="h-3 bg-gray-700 rounded w-1/2 mb-2"></div>
+            <div className="h-4 bg-secondary/20 rounded w-3/4 mb-2"></div>
+            <div className="h-3 bg-secondary/20 rounded w-1/2 mb-2"></div>
             <div className="flex items-center gap-2 mt-3">
-              <div className="w-6 h-6 bg-gray-700 rounded-full"></div>
-              <div className="h-3 bg-gray-700 rounded w-20"></div>
+              <div className="w-6 h-6 bg-secondary/20 rounded-full"></div>
+              <div className="h-3 bg-secondary/20 rounded w-20"></div>
             </div>
           </div>
-        ))}
+        
       </div>
     );
   }
@@ -96,7 +96,7 @@ export default function PastAuctionsCard({ auctions, loading }: PastAuctionsCard
         <div
           key={auction._id}
           onClick={() => navigate(`/bid/${auction.blockchainAuctionId}`)}
-          className="p-3 bg-white/5 hover:bg-white/10 rounded-xl cursor-pointer transition-all duration-200 border border-transparent hover:border-primary/30"
+          className="p-3 bg-primary/5 hover:bg-primary/10 rounded-xl cursor-pointer transition-all duration-200 border border-transparent hover:border-primary/30"
         >
           <div className="flex items-start flex-row-reverse gap-3">
             {auction.imageUrl && (

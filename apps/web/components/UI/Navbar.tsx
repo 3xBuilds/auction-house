@@ -222,7 +222,11 @@ export default function Navbar() {
                 : "text-white hover:text-white hover:bg-white/10 bg-white/5"
             }`}
           >
-            <Trophy className="w-6 h-6" />
+            <Trophy className={` ${
+              pathname === "/leaderboard"
+                ? "text-white"
+                : "text-white/30"
+            } w-5 h-5`} />
           </a>
 
           {/* Past Auctions */}
@@ -234,7 +238,11 @@ export default function Navbar() {
                 : "text-white hover:text-white hover:bg-white/10 bg-white/5"
             }`}
           >
-            <Clock className="w-6 h-6" />
+            <Clock className={` ${
+              pastDrawerOpen
+                ? "text-white"
+                : "text-white/30"
+            } w-5 h-5`} />
           </button>
 
           {/* Information */}
@@ -247,7 +255,11 @@ export default function Navbar() {
                 : "text-white hover:text-white hover:bg-white/10 bg-white/5"
             }`}
           >
-            <Info className="w-6 h-6" />
+            <Info className={` ${
+              pathname === "/info"
+                ? "text-white"
+                : "text-white/30"
+            } w-5 h-5`} />
           </a>
 
           {/* Profile */}
@@ -260,7 +272,11 @@ export default function Navbar() {
                 : "text-white hover:text-white hover:bg-white/10 bg-white/5"
             }`}
           >
-            <User className="w-6 h-6" />
+            <User className={` ${
+              pathname === "/profile"
+                ? "text-white"
+                : "text-white/30"
+            } w-5 h-5`} />
           </a>
 
           {authenticated && address && (
@@ -278,7 +294,11 @@ export default function Navbar() {
                   : "text-primary/70 bg-primary/10 hover:text-primary/90 hover:bg-primary/30"
               }`}
             >
-              <PlusCircle className="w-6 h-6" />
+              <PlusCircle className={` ${
+                pathname === "/create"
+                  ? "text-white"
+                  : "text-primary/70"
+              } w-5 h-5`} />
             </a>
           </>)}
         </div>

@@ -502,6 +502,9 @@ const LandingAuctions: React.FC = () => {
           checkUsdc(auction.tokenAddress) ? 6 : 18
         )
       );
+
+      console.log("User token balance:", formattedBalance);
+
       if (formattedBalance < bidAmount) {
         toast.error("Insufficient token balance to place bid", { id: toastId });
         setIsLoading(false);
@@ -518,6 +521,9 @@ const LandingAuctions: React.FC = () => {
 
         await wallet.switchChain(baseChain.id);
         const provider = await wallet.getEthereumProvider();
+
+        console.log("Using external wallet provider for transaction...", user);
+
         const bidderIdentifier = String(user.socialId)
          
         const approveData = encodeFunctionData({
@@ -556,6 +562,8 @@ const LandingAuctions: React.FC = () => {
           ],
         } as const;
 
+        console.log("Calls request prepared:", callsRequest);
+
         try {
           const callsResponse = await provider.request({
             method: "wallet_sendCalls",
@@ -590,10 +598,17 @@ const LandingAuctions: React.FC = () => {
           await processSuccess(auctionId, bidAmount);
           return;
         } catch (walletSendError) {
-          toast.error("Transaction failed", { id: toastId });
-          setIsLoading(false);
+          console.log("wallet_sendCalls failed, attempting fallback transaction...");
+          await handleFallbackTransaction(
+            auctionId,
+            bidAmount,
+            bidAmountInWei,
+            auction,
+            toastId
+          );
         }
       } else {
+        console.log("Using OnChainKit context for transaction..., bidAmount:");
         toast.loading(`Preparing ${bidAmount} ${auction.currency} bid...`, {
           id: toastId,
         });
@@ -1079,6 +1094,7 @@ const LandingAuctions: React.FC = () => {
             auction={auction}
             onNavigate={navigate}
             renderDescription={renderDescription}
+            onBidClick={openBidDrawer}
           />
         ))}
 
