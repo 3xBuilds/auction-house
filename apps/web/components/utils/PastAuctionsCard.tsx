@@ -68,7 +68,7 @@ export default function PastAuctionsCard({ auctions, loading }: PastAuctionsCard
         
           <div
             
-            className="p-3 bg-white/5 rounded-lg animate-pulse"
+            className="p-3 bg-secondary/5 rounded-lg animate-pulse"
           >
             <div className="h-4 bg-secondary/20 rounded w-3/4 mb-2"></div>
             <div className="h-3 bg-secondary/20 rounded w-1/2 mb-2"></div>
