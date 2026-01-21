@@ -16,6 +16,8 @@ import {
 } from "@repo/contracts";
 import { RiLoader5Fill } from "react-icons/ri";
 import { IoShareOutline, IoLinkOutline, IoCopyOutline } from "react-icons/io5";
+import { FaShare } from "react-icons/fa";
+import { Users, Clock, TrendingUp } from "lucide-react";
 import { Button } from "@/components/UI/button";
 import Input from "@/components/UI/Input";
 import {
@@ -49,7 +51,6 @@ import { ethers } from "ethers";
 import { checkUsdc } from "@/utils/checkUsdc";
 // import { WalletConnect } from "@/components/Web3/walletConnect";
 import sdk from "@farcaster/miniapp-sdk";
-import { FaShare } from "react-icons/fa";
 import { useNavigateWithLoader } from "@/utils/useNavigateWithLoader";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import AggregateConnector from "./utils/aggregateConnector";
@@ -1037,104 +1038,45 @@ export default function BidPage() {
 
   return (
     <div className="min-h-screen py-8 max-lg:pt-4">
-      <div className="max-w-6xl max-lg:mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Auction Header */}
-        <div className="bg-white/10 rounded-lg shadow-md lg:p-4 p-2 mb-8 relative overflow-hidden">
-          {auctionData.imageUrl && (
-            <div className="mb-4 -mx-4 -mt-4 lg:-mx-4 lg:-mt-4">
+      <div className="max-w-7xl max-lg:mx-auto">
+        {/* Auction Header - Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Left Column - Auction Image */}
+          <div className="w-full">
+            {auctionData.imageUrl ? (
               <Image
                 src={auctionData.imageUrl}
                 alt={auctionData.auctionName}
                 width={800}
-                height={400}
-                className="w-full h-52 lg:h-96 object-cover rounded-t-lg"
+                height={600}
+                className="w-full h-[400px] lg:h-[600px] object-cover rounded-2xl"
                 unoptimized
               />
-            </div>
-          )}
-          
-          <div className="mb-4">
-            <div className="flex-1">
-              <Heading size="md">{auctionData.auctionName}</Heading>
-              {auctionData.description && renderDescription(auctionData.description)}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 mb-4">
-            <div>
-              <p className="text-xs text-caption mb-1">Hosted By</p>
-              <div className="flex items-center gap-2">
-                {(auctionData.hostedBy.pfp_url || auctionData.hostedBy.twitterProfile?.profileImageUrl) && (
-                  <img
-                    src={auctionData.hostedBy.pfp_url || auctionData.hostedBy.twitterProfile?.profileImageUrl}
-                    alt="Host avatar"
-                    className="w-6 h-6 rounded-full"
-                  />
-                )}
-                {auctionData.hostedBy._id ? (
-                  <button
-                    onClick={() => {
-                      navigate(`/user/${auctionData.hostedBy._id}`);
-                    }}
-                    className="text-md font-semibold text-primary bg-transparent px-0 hover:text-primary/80 transition-colors"
-                  >
-                    {auctionData.hostedBy.display_name ||
-                      auctionData.hostedBy.username || auctionData.hostedBy.twitterProfile?.username}
-                  </button>
-                ) : (
-                  <span className="text-md font-semibold">
-                    {auctionData.hostedBy.display_name ||
-                      auctionData.hostedBy.username || auctionData.hostedBy.twitterProfile?.username}
-                  </span>
-                )}
-                {auctionData.hostedBy.averageRating && auctionData.hostedBy.averageRating > 0 && (
-                  <RatingCircle
-                    rating={auctionData.hostedBy.averageRating}
-                    totalReviews={auctionData.hostedBy.totalReviews || 0}
-                    size="sm"
-                    showLabel={false}
-                  />
-                )}
+            ) : (
+              <div className="w-full h-[400px] lg:h-[600px] rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-secondary/10" />
+                <div className="relative z-10 text-center">
+                  <div className="text-8xl lg:text-9xl opacity-20 mb-4">🏛️</div>
+                  <p className="text-white/40 text-lg font-medium">{auctionData.auctionName}</p>
+                </div>
               </div>
-            </div>
-            <div>
-              <p className="text-xs text-caption">End Date</p>
-              <p className="text-md font-semibold">
-                {formatDate(auctionData.endDate)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-caption">Currency</p>
-              <p className="text-md font-semibold">{auctionData.currency}</p>
-            </div>
-            <div>
-              <p className="text-xs text-caption">
-                {parseFloat(auctionData.highestBid) > 0
-                  ? "Highest Bid"
-                  : "Minimum Bid"}
-              </p>
-              <p className="text-md font-semibold">
-                {parseFloat(auctionData.highestBid) > 0
-                  ? `${formatBidAmount(
-                      auctionData.highestBid,
-                      auctionData.currency
-                    )} ${auctionData.currency}`
-                  : `${auctionData.minimumBid} ${auctionData.currency}`}
-              </p>
-            </div>
+            )}
           </div>
 
-          <div className="flex items-center justify-end gap-2 mt-4">
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-bold ${
-                auctionData.auctionStatus === "Running"
-                  ? "bg-green-100 text-green-800"
-                  : "bg-red-100 text-red-800"
-              }`}
-            >
-              {auctionData.auctionStatus}
-            </span>
-            <div className="relative">
+          {/* Right Column - Auction Details Card */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-3 lg:p-8 shadow-lg backdrop-blur-sm">
+            {/* Status and Share - Top Right */}
+            <div className="flex items-center justify-between mb-6">
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-bold ${
+                  auctionData.auctionStatus === "Running"
+                    ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                    : "bg-red-500/20 text-red-400 border border-red-500/30"
+                }`}
+              >
+                {auctionData.auctionStatus}
+              </span>
+              <div className="relative">
               <Button
                 variant="ghost"
                 size="sm"
@@ -1275,6 +1217,141 @@ export default function BidPage() {
               )}
             </div>
           </div>
+
+            {/* Auction Title and Description */}
+            <div className="mb-6">
+              <Heading size="lg" className="text-white mb-2">
+                {auctionData.auctionName}
+              </Heading>
+              {auctionData.description && renderDescription(auctionData.description)}
+            </div>
+
+            {/* Current Highest Bid - Prominent Display */}
+            <div className="bg-gradient-to-br from-primary/10 to-secondary/10 border border-primary/30 rounded-xl p-6 mb-6">
+              <p className="text-sm text-caption mb-2">
+                {parseFloat(auctionData.highestBid) > 0
+                  ? "Current Highest Bid"
+                  : "Minimum Bid"}
+              </p>
+              <div className="flex items-baseline gap-3">
+                <Heading size="xl" className="gradient-text">
+                  {parseFloat(auctionData.highestBid) > 0
+                    ? formatBidAmount(auctionData.highestBid, auctionData.currency)
+                    : auctionData.minimumBid}
+                </Heading>
+                <span className="text-2xl font-bold text-white">{auctionData.currency}</span>
+              </div>
+              {(() => {
+                const highestBidValue = parseFloat(auctionData.highestBid) > 0
+                  ? calculateBidderUSDValue(auctionData.highestBid)
+                  : (auctionTokenPrice ? parseFloat(auctionData.minimumBid) * auctionTokenPrice : null);
+                return highestBidValue !== null && (
+                  <p className="text-lg text-secondary mt-2">
+                    ≈ ${highestBidValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                );
+              })()}
+
+              {/* Place Bid Button (if auction is running) */}
+        {auctionData.auctionStatus === "Running" && (
+          
+            <Button
+              onClick={openBidDrawer}
+              className="px-12 py-6 mt-4 w-full text-xl gradient-button text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Place a Bid
+            </Button>
+        
+        )}
+            </div>
+
+            {/* Metadata Grid - 2x2 */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              {/* Hosted By */}
+              <div className="bg-white/5 border border-white/10 rounded-xl p-2 lg:p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                    <Users className="w-4 h-4 text-primary" />
+                  </div>
+                  <p className="text-xs text-caption">Hosted By</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {(auctionData.hostedBy.pfp_url || auctionData.hostedBy.twitterProfile?.profileImageUrl) && (
+                    <img
+                      src={auctionData.hostedBy.pfp_url || auctionData.hostedBy.twitterProfile?.profileImageUrl}
+                      alt="Host avatar"
+                      className="w-8 h-8 rounded-full"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    {auctionData.hostedBy._id ? (
+                      <button
+                        onClick={() => {
+                          navigate(`/user/${auctionData.hostedBy._id}`);
+                        }}
+                        className="text-sm font-semibold text-primary bg-transparent px-0 hover:text-primary/80 transition-colors truncate block"
+                      >
+                        {auctionData.hostedBy.display_name ||
+                          auctionData.hostedBy.username || auctionData.hostedBy.twitterProfile?.username}
+                      </button>
+                    ) : (
+                      <span className="text-sm font-semibold text-white truncate block">
+                        {auctionData.hostedBy.display_name ||
+                          auctionData.hostedBy.username || auctionData.hostedBy.twitterProfile?.username}
+                      </span>
+                    )}
+                    {auctionData.hostedBy.averageRating && auctionData.hostedBy.averageRating > 0 && (
+                      <RatingCircle
+                        rating={auctionData.hostedBy.averageRating}
+                        totalReviews={auctionData.hostedBy.totalReviews || 0}
+                        size="sm"
+                        showLabel={false}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* End Date */}
+              <div className="bg-white/5 border border-white/10 rounded-xl p-2 lg:p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center">
+                    <Clock className="w-4 h-4 text-secondary" />
+                  </div>
+                  <p className="text-xs text-caption">End Date</p>
+                </div>
+                <p className="text-sm font-semibold text-white">
+                  {formatDate(auctionData.endDate)}
+                </p>
+              </div>
+
+              {/* Total Bids */}
+              <div className="bg-white/5 border border-white/10 rounded-xl p-2 lg:p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-green-400" />
+                  </div>
+                  <p className="text-xs text-caption">Total Bids</p>
+                </div>
+                <p className="text-2xl font-bold text-white">
+                  {auctionData.bidders.length}
+                </p>
+              </div>
+
+              {/* Participants */}
+              <div className="bg-white/5 border border-white/10 rounded-xl p-2 lg:p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                    <Users className="w-4 h-4 text-primary" />
+                  </div>
+                  <p className="text-xs text-caption">Participants</p>
+                </div>
+                <p className="text-2xl font-bold text-white">
+                  {new Set(auctionData.bidders.map(b => b.walletAddress)).size}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Click outside to close share dropdown */}
@@ -1286,15 +1363,21 @@ export default function BidPage() {
         )}
 
         {/* Bidders Section */}
-        <div className="bg-white/10 rounded-lg shadow-md lg:p-4 p-2">
-          <h2 className="text-xl font-bold text-white mb-4">
+        <div className="bg-white/5 border border-white/10 rounded-2xl shadow-lg backdrop-blur-sm lg:p-6 p-4">
+          <h2 className="text-2xl font-bold text-white mb-6">
             Bidders ({auctionData.bidders.length})
           </h2>
 
           {auctionData.bidders.length === 0 ? (
-            <p className="text-caption text-center py-8">No bids placed yet</p>
+            <div className="text-center py-12">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
+                <Users className="w-8 h-8 text-caption" />
+              </div>
+              <p className="text-caption">No bids placed yet</p>
+              <p className="text-caption text-sm mt-2">Be the first to place a bid!</p>
+            </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {auctionData.bidders
                 .sort(
                   (a, b) => parseFloat(b.bidAmount) - parseFloat(a.bidAmount)
@@ -1302,47 +1385,60 @@ export default function BidPage() {
                 .map((bidder, index) => (
                   <div
                     key={index}
-                    className={`flex justify-between max-lg:gap-2 lg:p-4 p-2 ${
-                      index == 0
-                        ? "border border-primary bg-primary/10"
-                        : "bg-white/10"
-                    } rounded-lg hover:bg-white/20 duration-200 ${
+                    className={`flex items-center justify-between lg:p-5 p-4 rounded-xl transition-all duration-200 ${
+                      index === 0
+                        ? "bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/30 hover:border-primary/50"
+                        : "bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20"
+                    } ${
                       bidder.userId ? "cursor-pointer" : ""
                     }`}
                     onClick={() =>
-
                       bidder.userId && navigate(`/user/${bidder.userId}`)
                     }
                   >
-                    <div className="flex items-center lg:space-x-4 space-x-2">
+                    <div className="flex items-center gap-3 lg:gap-4 flex-1 min-w-0">
+                      {index === 0 && (
+                        <div className="hidden lg:flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 text-white font-bold text-sm">
+                          1
+                        </div>
+                      )}
                       <img
                         src={bidder.image}
                         alt={bidder.displayName}
-                        className="w-8 h-8 rounded-full"
+                        className="w-10 h-10 lg:w-12 lg:h-12 rounded-full ring-2 ring-white/10"
                       />
-                      <div className="hidden lg:block">
-                        <p className="font-semibold text-white">
-                          {bidder.displayName}
-                        </p>
-                      </div>
-                      <div className="lg:hidden">
-                        <ScrollingName name={bidder.displayName} className="max-w-40 font-semibold text-white" />
+                      <div className="flex-1 min-w-0">
+                        <div className="hidden lg:block">
+                          <p className="font-semibold text-white text-base">
+                            {bidder.displayName}
+                          </p>
+                          {bidder.walletAddress && (
+                            <p className="text-xs text-caption truncate">
+                              {bidder.walletAddress.slice(0, 6)}...{bidder.walletAddress.slice(-4)}
+                            </p>
+                          )}
+                        </div>
+                        <div className="lg:hidden">
+                          <ScrollingName name={bidder.displayName} className="max-w-32 font-semibold text-white" />
+                        </div>
                       </div>
                     </div>
 
-                    <div className="lg:text-right text-center">
-                      <p className="font-bold lg:text-lg text-sm">
+                    <div className="text-right">
+                      <p className={`font-bold lg:text-xl text-lg ${
+                        index === 0 ? "gradient-text" : "text-white"
+                      }`}>
                         {formatBidAmount(
                           bidder.bidAmount,
                           auctionData.currency
                         )}{" "}
-                        {auctionData.currency}
+                        <span className="text-sm lg:text-base">{auctionData.currency}</span>
                       </p>
                       {(() => {
                         const usdValue = calculateBidderUSDValue(bidder.bidAmount);
                         return usdValue !== null && (
-                          <p className="text-xs text-secondary text-right">
-                            ${usdValue.toFixed(2)}
+                          <p className="text-sm lg:text-base text-green-400 mt-1">
+                            ${usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </p>
                         );
                       })()}
@@ -1352,18 +1448,6 @@ export default function BidPage() {
             </div>
           )}
         </div>
-
-        {/* Place Bid Button (if auction is running) */}
-        {auctionData.auctionStatus === "Running" && (
-          <div className="mt-8 text-center">
-            <Button
-              onClick={openBidDrawer}
-              className="px-12 py-6 text-xl gradient-button text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Place a Bid
-            </Button>
-          </div>
-        )}
 
         {/* Bid Drawer */}
         <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>

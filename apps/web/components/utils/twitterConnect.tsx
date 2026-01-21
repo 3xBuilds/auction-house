@@ -232,7 +232,7 @@ export default function LoginWithOAuth() {
                 {/* Mobile View - Twitter Account Display */}
                 <div className="relative lg:hidden" ref={menuRef}>
                   <div 
-                    className="flex items-center justify-between gap-2 bg-white/10 px-3 py-2 max-lg:p-1 rounded-full cursor-pointer hover:bg-white/20 transition-colors"
+                    className="flex items-center justify-between gap-2 bg-white/10 px-3 py-2 max-lg:p-1 rounded-lg cursor-pointer hover:bg-white/20 transition-colors"
                     onClick={() => setMenuOpen(!menuOpen)}
                   >
                       <div className="flex items-center lg:gap-2 relative">
@@ -243,7 +243,7 @@ export default function LoginWithOAuth() {
                                 alt={twitterAccount.username || 'Twitter Profile'}
                                 width={32}
                                 height={32}
-                                className="rounded-full w-8 aspect-square bg-primary/50 border-2 border-primary"
+                                className="rounded-lg w-8 aspect-square bg-primary/50 border-2 border-primary"
                             />
                         )}
                         {!connectedWallet && (

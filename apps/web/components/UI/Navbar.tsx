@@ -139,7 +139,7 @@ export default function Navbar() {
             </a>
           )}
 
-          {/* Past Auctions */}
+          {/* Past Auctions
           <button
             onClick={() => setPastDrawerOpen(true)}
             className="flex flex-col items-center justify-center flex-1"
@@ -150,7 +150,7 @@ export default function Navbar() {
             <span className={`text-[10px] ${pastDrawerOpen ? "text-primary" : "text-white/60"}`}>
               Past
             </span>
-          </button>
+          </button> */}
 
           {/* Info */}
           <a

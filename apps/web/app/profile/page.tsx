@@ -12,6 +12,7 @@ import { useState, useEffect } from 'react'
 import TwitterAuthModal from '@/components/UI/TwitterAuthModal'
 import { useMiniKit } from '@coinbase/onchainkit/minikit'
 import ReviewCard from '@/components/UI/ReviewCard'
+import ScrollingName from '@/components/utils/ScrollingName'
 
 interface Bid {
   _id: string
@@ -181,7 +182,7 @@ export default function ProfilePage() {
     <div className="min-h-screen ">
       <div className="max-w-5xl mx-auto pt-4 lg:pt-6 max-lg:pb-20">
         {/* Profile Header */}
-        <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-2xl border border-primary/30 p-8 mb-6">
+        <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-2xl border border-primary/30 lg:p-8 p-2 mb-6">
           <div className="flex max-lg:flex-col items-center justify-between gap-6">
             <div className="flex items-center gap-6">
               {user?.pfp_url ? (
@@ -200,10 +201,11 @@ export default function ProfilePage() {
               )}
               
               <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-3xl max-lg:text-2xl font-bold text-white">
-                    {profileData?.twitterProfile?.name || user.username || 'Art Collector'}
-                  </h1>
+                <div className="flex items-center lg:gap-3 gap-1 mb-2">
+                  <ScrollingName
+                    name={profileData?.twitterProfile?.name || user.username || 'Art Collector'}
+                    className="text-3xl max-lg:text-xl font-bold text-white max-lg:w-36 max-w-80"
+                  />
                   {profileData?.averageRating && profileData.averageRating > 0 && (
                     <RatingCircle
                       rating={profileData.averageRating}
@@ -213,7 +215,7 @@ export default function ProfilePage() {
                     />
                   )}
                 </div>
-                <p className="text-gray-400 mb-2">
+                <p className="text-secondary mb-2 text-sm">
                   @{profileData?.twitterProfile?.username || user.username || 'artcollector'}
                 </p>
                 <div className="flex flex-wrap gap-3">
@@ -265,7 +267,7 @@ export default function ProfilePage() {
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-white mb-4">Statistics</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            <div className="bg-white/10 rounded-xl p-6 border border-white/10">
+            <div className="bg-white/10 rounded-xl lg:p-6 p-4 border border-white/10">
               <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center mb-3">
                 <RiAuctionLine className="text-2xl text-purple-400" />
               </div>
@@ -273,7 +275,7 @@ export default function ProfilePage() {
               <div className="text-sm text-gray-400">Auctions Created</div>
             </div>
 
-            <div className="bg-white/10 rounded-xl p-6 border border-white/10">
+            <div className="bg-white/10 rounded-xl lg:p-6 p-4 border border-white/10">
               <div className="w-12 h-12 rounded-xl bg-pink-500/20 flex items-center justify-center mb-3">
                 <RiMedalLine className="text-2xl text-pink-400" />
               </div>
@@ -281,7 +283,7 @@ export default function ProfilePage() {
               <div className="text-sm text-gray-400">Auctions Won</div>
             </div>
 
-            <div className="bg-white/10 rounded-xl p-6 border border-white/10">
+            <div className="bg-white/10 rounded-xl lg:p-6 p-4 border border-white/10">
               <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center mb-3">
                 <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -291,7 +293,7 @@ export default function ProfilePage() {
               <div className="text-sm text-gray-400">Total Bids</div>
             </div>
 
-            <div className="bg-white/10 rounded-xl p-6 border border-white/10">
+            <div className="bg-white/10 rounded-xl lg:p-6 p-4 border border-white/10">
               <div className="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center mb-3">
                 <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -303,11 +305,11 @@ export default function ProfilePage() {
           </div>
 
           {/* Total Trading Volume */}
-          <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 rounded-xl p-6 border border-green-500/30">
+          <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 rounded-xl lg:p-6 p-4 border border-green-500/30">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm text-gray-400 mb-1">Total Trading Volume</div>
-                <div className="text-4xl font-bold text-white">{formatVolume(statistics?.totalTradingVolume || 0)}</div>
+                <div className="lg:text-4xl text-2xl font-bold text-white">{formatVolume(statistics?.totalTradingVolume || 0)}</div>
                 <div className="text-sm text-gray-400 mt-1">Across all auctions</div>
               </div>
               <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center">
@@ -323,7 +325,7 @@ export default function ProfilePage() {
         {reviews.length > 0 && (
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-white mb-4">Reviews ({reviews.filter(r => r.auction).length})</h2>
-            <div className="bg-secondary/10 rounded-xl border border-secondary/10 p-6">
+            <div className="bg-secondary/10 rounded-xl border border-secondary/10 lg:p-6 p-4">
               <div className="space-y-4">
               {reviews.filter(review => review.auction).map((review) => (
                 <ReviewCard
@@ -353,7 +355,7 @@ export default function ProfilePage() {
         {/* Recent Activity */}
         <div>
           <h2 className="text-2xl font-bold text-white mb-4">Recent Activity</h2>
-          <div className="bg-secondary/10 rounded-xl border border-secondary/10 p-6">
+          <div className="bg-secondary/10 rounded-xl border border-secondary/10 lg:p-6 p-4">
             {recentBids.length > 0 ? (
               <div className="space-y-4">
                 {recentBids.map((bid) => (

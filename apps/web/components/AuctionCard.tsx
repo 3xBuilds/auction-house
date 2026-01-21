@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Image from "next/image";
 import { Users } from "lucide-react";
 import ScrollingName from "./utils/ScrollingName";
+import { fetchTokenPrice } from "@/utils/tokenPrice";
 
 interface Bidder {
   user: string;
@@ -62,6 +63,24 @@ const AuctionCard: React.FC<AuctionCardProps> = ({
   renderDescription,
   onBidClick,
 }) => {
+
+  const [tokenPrice, setTokenPrice] = React.useState<number | null>(null);
+
+  async function getTokenPrice() {
+    try{
+      const response = await fetchTokenPrice(auction.tokenAddress);
+      setTokenPrice(response);
+    }
+    catch (error) {
+      console.error("Error fetching token price:", error);
+    }
+  }
+
+  useEffect(() => {
+    if(auction && auction.tokenAddress)
+    getTokenPrice();
+  }, [auction]);
+
   return (
     <div
       key={auction._id}
@@ -71,7 +90,12 @@ const AuctionCard: React.FC<AuctionCardProps> = ({
       {/* Image */}
       <div className="relative w-full h-64">
         <Image
-          src={auction.imageUrl || "https://via.placeholder.com/400x300"}
+          src={
+            auction.imageUrl ||
+            `https://api.dicebear.com/9.x/glass/svg?seed=${
+              auction.hostedBy.username || auction.hostedBy.wallet
+            }`
+          }
           alt={auction.auctionName}
           width={400}
           height={300}
@@ -133,12 +157,12 @@ const AuctionCard: React.FC<AuctionCardProps> = ({
                     (auction.highestBid > 0
                       ? auction.highestBid
                       : auction.minimumBid) *
-                    (auction.currency === "USDC" ? 1 : 3500)
+                    (auction.currency === "USDC" ? 1 : tokenPrice || 0)
                   ).toLocaleString()}
                 </div>
               </div>
             </div>
-            <div className="flex items-center justify-between bg-white/10 rounded-full border border-white/30 px-2 py-1 w-16">
+            <div className="flex items-center justify-between bg-white/10 rounded-full border border-white/30 px-2 py-1 gap-1">
               <Users className="w-4 h-4 text-white/50" />
               <span className="text-white text-sm font-semibold">
                 {auction.participantCount}
