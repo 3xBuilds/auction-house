@@ -138,6 +138,15 @@ const LandingAuctions: React.FC = () => {
     "all" | "usdc" | "creator-coins"
   >("all");
 
+  // Recent Activity Ticker State
+  const [recentBids, setRecentBids] = useState<{
+    bidderName: string;
+    auctionName: string;
+    bidAmount: number;
+    currency: string;
+    bidTimestamp: string;
+  }[]>([]);
+
   // Intersection Observer ref
   const observerRef = useRef<HTMLDivElement>(null);
 
@@ -233,6 +242,29 @@ const LandingAuctions: React.FC = () => {
     // Fetch auctions for all users (both authenticated and unauthenticated)
     fetchTopAuctions(1, false);
   }, [currencyFilter]);
+
+  // Fetch recent activity for ticker
+  useEffect(() => {
+    const fetchRecentActivity = async () => {
+      try {
+        const res = await fetch('/api/leaderboard/recent-bids');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            setRecentBids(data.data.slice(0, 10));
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching recent bids:', err);
+      }
+    };
+
+    fetchRecentActivity();
+    
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchRecentActivity, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Intersection Observer for lazy loading
   useEffect(() => {
@@ -942,7 +974,7 @@ const LandingAuctions: React.FC = () => {
   };
 
   const SkeletonCard = () => (
-    <div className="bg-black/40 w-full text-white border border-secondary/10 rounded-2xl transition-all overflow-hidden flex flex-col animate-pulse">
+    <div className="bg-black/40 w-full max-w-full text-white border border-secondary/10 rounded-2xl transition-all overflow-hidden flex flex-col animate-pulse col-span-1">
       {/* Image skeleton */}
       <div className="relative w-full h-64 bg-secondary/20"></div>
 
@@ -1016,14 +1048,35 @@ const LandingAuctions: React.FC = () => {
   );
 
   return (
-    <div className="w-full mt-10 pb-24">
-      {/* Recent Activity - Mobile (Top) */}
-      <div className="lg:hidden mb-6 overflow-x-auto scrollbar-hide">
-        <LeaderboardSidebar />
-      </div>
-
+    <div className="w-full lg:mt-10 mt-8 pb-24 ">
       {/* Main Content */}
-      <div className="flex-1 w-full max-lg:mx-auto lg:w-[1000px]">
+      <div className="w-full max-lg:mx-auto lg:w-[1000px]">
+        {/* Recent Activity Ticker - Mobile Only */}
+        <div className="lg:hidden mb-4 overflow-hidden bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border border-primary/20 rounded-lg py-2">
+          <div className="flex animate-scroll whitespace-nowrap">
+            {recentBids.length > 0 ? (
+              <>
+                {[...recentBids, ...recentBids, ...recentBids].map((bid, index) => (
+                  <div key={index} className="inline-flex items-center mx-4 text-sm">
+                    <span className="text-caption">{bid.bidderName}</span>
+                    
+                    <span className="mx-2 text-caption">•</span>
+                    <span className="text-white font-medium">{bid.auctionName}</span>
+                    <span className="mx-2 text-green-500">→</span>
+                    <span className="text-primary font-semibold">
+                      {bid.bidAmount.toLocaleString()} {bid.currency}
+                    </span>
+                  </div>
+                ))}
+              </>
+            ) : (
+              <div className="inline-flex items-center mx-4 text-sm text-caption">
+                <span>Loading recent activity...</span>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="flex max-lg:flex-col lg:items-center justify-between lg:mb-4 max-lg:gap-4">
           <h2 className="text-2xl font-bold gradient-text">Latest Auctions</h2>
           {/* Currency Filter */}

@@ -60,7 +60,7 @@ export default function HomePage() {
       {/* <UsernameManager /> */}
       <Welcome/>
       {/* <InfoCarousel/> */}
-      <div className="flex items-start">
+      <div className="flex items-start w-full">
         <LandingAuctions/>
         {/* Sidebar */}
               <LeaderboardSidebar />

@@ -176,9 +176,7 @@ export default function Navbar() {
               <div className={` ${pathname === "/profile" && "selected-gradient w-7 flex items-center justify-center aspect-square rounded-md"} `}>
                 <AggregateConnector/>
               </div>
-              <span className={`text-[10px] ${pathname === "/profile" ? "text-primary" : "text-white/60"}`}>
-                Profile
-              </span>
+              
             </div>
           </div>
         </div>

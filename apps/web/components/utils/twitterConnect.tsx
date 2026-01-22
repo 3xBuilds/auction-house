@@ -453,7 +453,7 @@ export default function LoginWithOAuth() {
                 {/* Mobile Login */}
                 <button 
                   onClick={handleTwitterLogin} 
-                  className="lg:hidden px-4 py-2 gradient-button transition-colors rounded-md font-bold h-10"
+                  className="lg:hidden p-2 gradient-button transition-colors rounded-md font-bold h-10"
                 >
                   <MdLogin className="text-lg" />
                 </button>
