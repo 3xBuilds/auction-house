@@ -16,6 +16,14 @@ import {
     DrawerHeader,
     DrawerTitle,
 } from "@/components/UI/Drawer";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/UI/Dialog";
 import { useMiniKit } from "@coinbase/onchainkit/minikit";
 import { getAccessToken, useWallets } from '@privy-io/react-auth';
 
@@ -29,6 +37,16 @@ export default function Welcome() {
     const address = wallets.length > 0 ? wallets[0].address : null;
     const [hasNotifications, setHasNotifications] = useState<boolean>(true);
     const [drawerOpen, setDrawerOpen] = useState(false);
+    const [isDesktop, setIsDesktop] = useState(false);
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia('(min-width: 1024px)');
+        setIsDesktop(mediaQuery.matches);
+        
+        const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+        mediaQuery.addEventListener('change', handler);
+        return () => mediaQuery.removeEventListener('change', handler);
+    }, []);
 
     // Check if user has already enabled notifications
     useEffect(() => {
@@ -128,53 +146,104 @@ export default function Welcome() {
                 </div>
 
                 {hasNotifications === false && context && (
-                    <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
-                        <DrawerContent>
-                            <DrawerHeader>
-                                <DrawerTitle className="text-center gradient-text text-2xl">
-                                    Enable Notifications
-                                </DrawerTitle>
-                                <DrawerDescription className="text-center text-white/70">
-                                    Stay updated on your auctions
-                                </DrawerDescription>
-                            </DrawerHeader>
-                            <div className="p-6 space-y-4">
-                                <div className="flex items-start gap-3">
-                                    <IoMdNotifications className="text-blue-500 text-2xl flex-shrink-0 mt-1" />
-                                    <div>
-                                        <h3 className="font-semibold text-white mb-1">Get Real-time Updates</h3>
-                                        <p className="text-sm text-white/70">
-                                            Receive instant notifications when you're outbid, when your auction receives bids, or when you win an auction.
-                                        </p>
+                    !isDesktop ? (
+                        <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+                                <DrawerContent>
+                                    <DrawerHeader>
+                                        <DrawerTitle className="text-center gradient-text text-2xl">
+                                            Enable Notifications
+                                        </DrawerTitle>
+                                        <DrawerDescription className="text-center text-white/70">
+                                            Stay updated on your auctions
+                                        </DrawerDescription>
+                                    </DrawerHeader>
+                                    <div className="p-6 space-y-4">
+                                        <div className="flex items-start gap-3">
+                                            <IoMdNotifications className="text-blue-500 text-2xl flex-shrink-0 mt-1" />
+                                            <div>
+                                                <h3 className="font-semibold text-white mb-1">Get Real-time Updates</h3>
+                                                <p className="text-sm text-white/70">
+                                                    Receive instant notifications when you're outbid, when your auction receives bids, or when you win an auction.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-3">
+                                            <FaPlus className="text-green-500 text-xl flex-shrink-0 mt-1" />
+                                            <div>
+                                                <h3 className="font-semibold text-white mb-1">Never Miss Out</h3>
+                                                <p className="text-sm text-white/70">
+                                                    Be the first to know about important auction events and act quickly on opportunities.
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <FaPlus className="text-green-500 text-xl flex-shrink-0 mt-1" />
-                                    <div>
-                                        <h3 className="font-semibold text-white mb-1">Never Miss Out</h3>
-                                        <p className="text-sm text-white/70">
-                                            Be the first to know about important auction events and act quickly on opportunities.
-                                        </p>
+                                    <DrawerFooter>
+                                        <button 
+                                            onClick={handleAddMiniApp}
+                                            disabled={isAddingMiniApp}
+                                            className="w-full px-6 py-3 gradient-button flex gap-2 items-center justify-center text-white rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <IoMdNotifications className="text-xl"/> 
+                                            {isAddingMiniApp ? "Enabling..." : "Enable Notifications"}
+                                        </button>
+                                        <DrawerClose asChild>
+                                            <button className="w-full px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-md transition">
+                                                Maybe Later
+                                            </button>
+                                        </DrawerClose>
+                                    </DrawerFooter>
+                                </DrawerContent>
+                            </Drawer>
+                    ) : (
+                        <Dialog open={drawerOpen} onOpenChange={setDrawerOpen}>
+                                <DialogContent className="sm:max-w-[500px]">
+                                    <DialogHeader>
+                                        <DialogTitle className="text-center gradient-text text-2xl">
+                                            Enable Notifications
+                                        </DialogTitle>
+                                        <DialogDescription className="text-center text-white/70">
+                                            Stay updated on your auctions
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="py-4 space-y-4">
+                                        <div className="flex items-start gap-3">
+                                            <IoMdNotifications className="text-blue-500 text-2xl flex-shrink-0 mt-1" />
+                                            <div>
+                                                <h3 className="font-semibold text-white mb-1">Get Real-time Updates</h3>
+                                                <p className="text-sm text-white/70">
+                                                    Receive instant notifications when you're outbid, when your auction receives bids, or when you win an auction.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-3">
+                                            <FaPlus className="text-green-500 text-xl flex-shrink-0 mt-1" />
+                                            <div>
+                                                <h3 className="font-semibold text-white mb-1">Never Miss Out</h3>
+                                                <p className="text-sm text-white/70">
+                                                    Be the first to know about important auction events and act quickly on opportunities.
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                            <DrawerFooter>
-                                <button 
-                                    onClick={handleAddMiniApp}
-                                    disabled={isAddingMiniApp}
-                                    className="w-full px-6 py-3 gradient-button flex gap-2 items-center justify-center text-white rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <IoMdNotifications className="text-xl"/> 
-                                    {isAddingMiniApp ? "Enabling..." : "Enable Notifications"}
-                                </button>
-                                <DrawerClose asChild>
-                                    <button className="w-full px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-md transition">
-                                        Maybe Later
-                                    </button>
-                                </DrawerClose>
-                            </DrawerFooter>
-                        </DrawerContent>
-                    </Drawer>
+                                    <DialogFooter className="flex-col gap-2">
+                                        <button 
+                                            onClick={handleAddMiniApp}
+                                            disabled={isAddingMiniApp}
+                                            className="w-full px-6 py-3 gradient-button flex gap-2 items-center justify-center text-white rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <IoMdNotifications className="text-xl"/> 
+                                            {isAddingMiniApp ? "Enabling..." : "Enable Notifications"}
+                                        </button>
+                                        <button 
+                                            onClick={() => setDrawerOpen(false)}
+                                            className="w-full px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-md transition"
+                                        >
+                                            Maybe Later
+                                        </button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                    )
                 )}
                 
             </div>

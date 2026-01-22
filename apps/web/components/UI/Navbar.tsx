@@ -16,6 +16,7 @@ import {
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import LoginWithOAuth from "../utils/twitterConnect";
 import AggregateConnector from "../utils/aggregateConnector";
+import ReviewFlowManager from "@/components/ReviewFlowManager";
 import { useCallback, useState, useEffect } from "react";
 import { getAccessToken } from '@privy-io/react-auth';
 
@@ -122,6 +123,9 @@ export default function Navbar() {
               Leaderboard
             </span>
           </a>
+
+          {/* Reviews */}
+          <ReviewFlowManager isMobile={true} />
 
           {/* Create */}
           {authenticated && address && (
@@ -278,6 +282,9 @@ export default function Navbar() {
                 : "text-white/30"
             } w-5 h-5`} />
           </a>
+
+          {/* Reviews */}
+          <ReviewFlowManager isMobile={false} />
 
           {authenticated && address && (
             <>

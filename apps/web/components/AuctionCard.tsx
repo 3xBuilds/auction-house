@@ -175,7 +175,7 @@ const AuctionCard: React.FC<AuctionCardProps> = ({
                 e.stopPropagation();
                 onBidClick(auction);
               }}
-              className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+              className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-4 rounded-xl transition-colors"
             >
               Place Bid
             </button>

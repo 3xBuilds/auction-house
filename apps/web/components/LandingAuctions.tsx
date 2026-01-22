@@ -13,6 +13,14 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "./UI/Drawer";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./UI/Dialog";
 import { useNavigateWithLoader } from "@/utils/useNavigateWithLoader";
 import RatingCircle from "./UI/RatingCircle";
 import toast from "react-hot-toast";
@@ -138,6 +146,16 @@ const LandingAuctions: React.FC = () => {
   const [selectedAuction, setSelectedAuction] = useState<Auction | null>(null);
   const [bidAmount, setBidAmount] = useState("");
   const [bidError, setBidError] = useState("");
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 1024px)');
+    setIsDesktop(mediaQuery.matches);
+    
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
 
   // Token price state
   const [tokenPrice, setTokenPrice] = useState<number | null>(null);
@@ -999,8 +1017,13 @@ const LandingAuctions: React.FC = () => {
 
   return (
     <div className="w-full mt-10 pb-24">
+      {/* Recent Activity - Mobile (Top) */}
+      <div className="lg:hidden mb-6 overflow-x-auto scrollbar-hide">
+        <LeaderboardSidebar />
+      </div>
+
       {/* Main Content */}
-      <div className="flex-1 max-lg:mx-auto lg:w-[1000px]">
+      <div className="flex-1 w-full max-lg:mx-auto lg:w-[1000px]">
         <div className="flex max-lg:flex-col lg:items-center justify-between lg:mb-4 max-lg:gap-4">
           <h2 className="text-2xl font-bold gradient-text">Latest Auctions</h2>
           {/* Currency Filter */}
@@ -1146,8 +1169,9 @@ const LandingAuctions: React.FC = () => {
       </div>
       </div>
       
-        {/* Bid Drawer */}
-        <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+        {/* Responsive Bid Modal */}
+        {!isDesktop ? (
+          <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
           <DrawerContent className="drawer-content max-h-[85vh] h-auto flex flex-col">
             <DrawerHeader className="shrink-0">
             <DrawerTitle className="my-4 text-xl">Place Your Bid</DrawerTitle>
@@ -1273,6 +1297,134 @@ const LandingAuctions: React.FC = () => {
           )}
         </DrawerContent>
       </Drawer>
+        ) : (
+          <Dialog open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle className="text-xl">Place Your Bid</DialogTitle>
+                <div className="text-left text-sm mt-4">
+                  {selectedAuction && (
+                    <ul className="space-y-2">
+                      <li className="border-b border-b-white/10 py-2 flex justify-between">
+                        <span className="text-caption">Bidding on:</span>
+                        <strong className="text-primary">
+                          {selectedAuction.auctionName}
+                        </strong>
+                      </li>
+                      <li className="border-b border-b-white/10 py-2 flex justify-between">
+                        <span className="text-caption">Minimum bid:</span>
+                        <strong className="text-primary">
+                          {formatBidAmount(
+                            selectedAuction.minimumBid,
+                            selectedAuction.currency
+                          )}
+                        </strong>
+                      </li>
+
+                      {selectedAuction.highestBid > 0 && (
+                        <li className="border-b border-b-white/10 py-2 flex justify-between">
+                          <span className="text-caption">
+                            Current highest bid:
+                          </span>
+                          <strong className="text-primary">
+                            {formatBidAmount(
+                              selectedAuction.highestBid,
+                              selectedAuction.currency
+                            )}
+                          </strong>
+                        </li>
+                      )}
+                    </ul>
+                  )}
+                </div>
+              </DialogHeader>
+
+              {!address ? (
+                <div className="py-4">
+                  <div className="text-center mb-4">
+                    <p className="text-caption mb-4">
+                      Please connect your wallet to place a bid
+                    </p>
+                    <AggregateConnector />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="py-4">
+                    <Input
+                      label="Bid Amount"
+                      value={bidAmount}
+                      onChange={(value) => {
+                        setBidAmount(value);
+                        if (bidError) setBidError(""); // Clear error when user types
+                      }}
+                      placeholder={
+                        selectedAuction
+                          ? `Enter amount in ${selectedAuction.currency}`
+                          : "Enter bid amount"
+                      }
+                      type="number"
+                      required
+                      className="mb-2"
+                    />
+
+                    {/* USD Value Display */}
+                    {bidAmount && parseFloat(bidAmount) > 0 && (
+                      <div className="mt-2 p-2 bg-white/5 rounded-lg border border-white/10">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-caption">USD Value:</span>
+                          <div className="flex items-center">
+                            {tokenPriceLoading ? (
+                              <>
+                                <RiLoader5Fill className="animate-spin text-primary mr-1" />
+                                <span className="text-caption">Loading...</span>
+                              </>
+                            ) : priceError ? (
+                              <span className="text-red-400">{priceError}</span>
+                            ) : tokenPrice && getUSDValue() ? (
+                              <span className="text-primary font-medium">
+                                {formatUSDAmount(getUSDValue()!)}
+                              </span>
+                            ) : (
+                              <span className="text-caption">--</span>
+                            )}
+                          </div>
+                        </div>
+                        {tokenPrice && !tokenPriceLoading && !priceError && (
+                          <div className="text-xs text-caption mt-1">
+                            1 {selectedAuction?.currency} ={" "}
+                            {formatUSDAmount(tokenPrice)}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {bidError && (
+                      <p className="text-red-500 text-sm mt-1">{bidError}</p>
+                    )}
+                  </div>
+
+                  <DialogFooter>
+                    <Button
+                      onClick={handleConfirmBid}
+                      disabled={isLoading || !bidAmount}
+                      className="w-full h-12 text-lg font-bold"
+                    >
+                      {isLoading ? (
+                        <>
+                          <RiLoader5Fill className="text-2xl mr-2 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        "Confirm Bid"
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </>
+              )}
+            </DialogContent>
+          </Dialog>
+        )}
     </div>
   );
 };

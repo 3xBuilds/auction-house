@@ -83,14 +83,14 @@ export default function TopRevenueCard({ users, loading }: TopRevenueCardProps) 
           </div>
           
           <img
-            src={user.pfp_url || `https://api.dicebear.com/5.x/identicon/svg?seed=${user.wallet}`}
+            src={user.pfp_url || `https://api.dicebear.com/5.x/identicon/svg?seed=${user.wallet || 'unknown'}`}
             alt={user.display_name || user.username || 'User'}
             className="w-10 h-10 rounded-full border-2 border-primary/20"
           />
           
           <div className="flex-1 min-w-0">
             <div className="font-medium text-sm truncate">
-              {user.display_name || user.username || `${user.wallet.slice(0, 6)}...${user.wallet.slice(-4)}`}
+              {user.display_name || user.username || (user.wallet ? `${user.wallet.slice(0, 6)}...${user.wallet.slice(-4)}` : 'Unknown')}
             </div>
             <div className="font-semibold text-primary text-sm">
               {formatRevenue(user.totalRevenue)}

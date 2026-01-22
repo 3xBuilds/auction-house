@@ -455,7 +455,7 @@ export default function LoginWithOAuth() {
                   onClick={handleTwitterLogin} 
                   className="lg:hidden px-4 py-2 gradient-button transition-colors rounded-md font-bold h-10"
                 >
-                  Log in
+                  <MdLogin className="text-lg" />
                 </button>
 
                 {/* Desktop Login */}
