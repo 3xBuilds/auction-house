@@ -168,7 +168,7 @@ const ReviewFlowManager: React.FC<ReviewFlowManagerProps> = ({ isMobile = false 
     return null;
   }
 
-  if (isMobile) {
+  if (isMobile == true) {
     return (
       <>
         <button
@@ -192,6 +192,7 @@ const ReviewFlowManager: React.FC<ReviewFlowManagerProps> = ({ isMobile = false 
     );
   }
 
+  if(isMobile == false)
   return (
     <>
       <button

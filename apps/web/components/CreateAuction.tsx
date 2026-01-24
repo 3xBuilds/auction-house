@@ -713,7 +713,7 @@ if (context?.client.clientFid === 309857) {
   if (!address)
     return (
       <div className=" max-lg:mx-auto mt-4">
-        <div className="bg-white/10 rounded-lg shadow-md border border-gray-700 p-8 text-center">
+        <div className="bg-white/10 rounded-lg shadow-md border border-white/20 p-8 text-center">
           <div className="flex flex-col items-center gap-4">
             <div className="w-16 h-16 gradient-button rounded-full flex items-center justify-center">
               <svg
@@ -750,7 +750,7 @@ if (context?.client.clientFid === 309857) {
     );
 
   return (
-    <div className="max-w-2xl mx-auto px-4 lg:min-w-[800px]">
+    <div className="max-w-2xl mx-auto px-4 lg:min-w-[800px] max-lg:pb-20">
       <form onSubmit={handleSubmit} className="space-y-6 mt-8">
         {/* Step Progress */}
         <div className="flex justify-center mb-8">
@@ -763,7 +763,7 @@ if (context?.client.clientFid === 309857) {
                       ? "bg-gradient-to-r from-primary to-secondary text-white shadow-lg"
                       : idx < currentStep
                       ? "bg-gradient-to-r from-primary to-secondary text-white"
-                      : "bg-gray-700 text-gray-400 border border-gray-600"
+                      : "bg-white/10 text-gray-400 border border-gray-600"
                   }`}
                 >
                   {step}
@@ -773,7 +773,7 @@ if (context?.client.clientFid === 309857) {
                     className={`h-0.5 w-16 mx-2 transition-all ${
                       idx < currentStep
                         ? "bg-gradient-to-r from-primary to-secondary"
-                        : "bg-gray-700"
+                        : "bg-white/10"
                     }`}
                   />
                 )}
@@ -782,7 +782,7 @@ if (context?.client.clientFid === 309857) {
           </div>
         </div>
 
-        <div className="min-h-[450px] flex flex-col">
+        <div className="lg:min-h-[450px] min-h-[300px] flex flex-col">
           <AnimatePresence mode="wait">
             {currentStep === 0 && (
               <motion.div
@@ -873,7 +873,7 @@ if (context?.client.clientFid === 309857) {
                         setEndTime(date);
                       }}
                       min={new Date().toISOString().split('T')[0]}
-                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-4 py-3 bg-white/10 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
                   <div>
@@ -890,12 +890,12 @@ if (context?.client.clientFid === 309857) {
                         date.setMinutes(parseInt(minutes));
                         setEndTime(date);
                       }}
-                      className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full px-4 py-3 bg-white/10 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
                 </div>
 
-                <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-3">
+                <div className="bg-white/10 border border-white/10 rounded-lg p-4 space-y-3">
                   <h3 className="text-lg font-semibold text-white mb-4">Auction Summary</h3>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Title:</span>
@@ -919,15 +919,15 @@ if (context?.client.clientFid === 309857) {
           </AnimatePresence>
         </div>
 
-        <div className="flex justify-between items-center pt-6 border-t border-gray-700">
+        <div className="flex justify-between items-center pt-6 border-t border-white/10">
           <button
             type="button"
             onClick={handlePrev}
             disabled={currentStep === 0}
             className={`px-6 py-3 rounded-lg font-semibold transition-all ${
               currentStep === 0
-                ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
-                : 'bg-gray-700 text-white hover:bg-gray-600'
+                ? 'bg-white/10 text-gray-600 cursor-not-allowed'
+                : 'bg-white/10 text-white hover:bg-gray-600'
             }`}
           >
             Previous
@@ -954,7 +954,7 @@ if (context?.client.clientFid === 309857) {
                   Creating...
                 </div>
               ) : (
-                'Create Auction'
+                'Create'
               )}
             </button>
           )}
