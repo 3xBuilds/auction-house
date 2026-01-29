@@ -39,7 +39,8 @@ export default function Navbar() {
 
   const router = useRouter();
 
-  const { authenticated } = usePrivy();
+  const { authenticated, getAccessToken } = usePrivy();
+  const [xpStats, setXpStats] = useState<{ level: number; currentSeasonXP: number; totalXP: number } | null>(null);
 
   const [pastDrawerOpen, setPastDrawerOpen] = useState(false);
   const [pastAuctions, setPastAuctions] = useState<any[]>([]);
@@ -72,6 +73,36 @@ export default function Navbar() {
     }
   }, [pastDrawerOpen, fetchPastAuctions]);
 
+  useEffect(() => {
+    if (user) {
+      const fetchXPStats = async () => {
+        try {
+          const accessToken = await getAccessToken();
+          const response = await fetch(`/api/leaderboard/user-stats`, {
+            headers: {
+              "x-user-social-id": user.socialId,
+              'Authorization': `Bearer ${accessToken}`
+            }
+          });
+          const data = await response.json();
+          console.log('Fetched XP stats:', data);
+          if (data.success) {
+            setXpStats({
+              level: data.stats.level,
+              currentSeasonXP: data.stats.currentSeasonXP,
+              totalXP: data.stats.totalXP
+            });
+          }
+        } catch (err) {
+          console.error('Failed to fetch XP stats:', err);
+        }
+      };
+
+      if(user)
+      fetchXPStats();
+    }
+  }, [user, getAccessToken]);
+
   const formatEndedLabel = (endDate: string) => {
     const end = new Date(endDate);
     const diffMs = Date.now() - end.getTime();
@@ -86,6 +117,25 @@ export default function Navbar() {
 
   return (
     <>
+      {/* XP Stats Bar - Mobile */}
+      {user && xpStats && (
+        <div className="fixed bottom-16 left-0 right-0 bg-gradient-to-r from-purple-600/30 to-blue-600/30 border-t-2 border-purple-500/50 backdrop-blur-md z-40 lg:hidden shadow-lg shadow-purple-500/20">
+          <div className="px-4 py-2.5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-br from-purple-600 to-purple-500 text-white text-sm font-bold rounded-full w-9 h-9 flex items-center justify-center border-2 border-purple-300 shadow-md">
+                {xpStats.level}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-purple-200 font-medium">Level {xpStats.level}</span>
+                <span className="text-sm font-bold text-white">{xpStats.currentSeasonXP.toLocaleString()} Season XP</span>
+              </div>
+            </div>
+            <div className="text-xs text-purple-200/80 font-medium">
+              Total: {xpStats.totalXP.toLocaleString()}
+            </div>
+          </div>
+        </div>
+      )}
       {/* Mobile Bottom Navbar */}
       <div className="fixed bottom-0 left-0 right-0 h-16 bg-black border-t border-white/30 z-50 lg:hidden">
         <div className="w-full h-full flex justify-around items-center px-2">
@@ -181,6 +231,7 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+
 
       {/* Desktop Bottom Navbar */}
       <div className="hidden lg:flex lg:fixed lg:bottom-0 lg:left-0 lg:right-0 h-24 lg:items-center lg:justify-between lg:px-6 lg:z-50">
@@ -306,6 +357,22 @@ export default function Navbar() {
               } w-5 h-5`} />
             </a>
           </>)}
+
+          {/* XP Stats - Desktop */}
+          {user && xpStats && (
+            <>
+              <div className="w-[2px] h-8 bg-white/10"></div>
+              <div className="flex items-center gap-2 px-2">
+                <div className="bg-gradient-to-br from-purple-600 to-purple-500 text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center border border-purple-300">
+                  {xpStats.level}
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-purple-200 font-medium leading-tight">Lvl {xpStats.level}</span>
+                  <span className="text-xs font-bold text-white leading-tight">{xpStats.currentSeasonXP.toLocaleString()} XP</span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Right - Empty space for balance */}

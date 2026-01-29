@@ -7,6 +7,7 @@ import { ethers } from "ethers";
 import { fetchTokenPrice, calculateUSDValue } from "@/utils/tokenPrice";
 import { authenticateRequest } from "@/utils/authService";
 import { sendNotification } from "@repo/queue";
+import { awardXP, calculateWinXP } from "@/utils/xpService";
 
 export async function POST(req: NextRequest) {
   try {
@@ -176,6 +177,22 @@ export async function POST(req: NextRequest) {
         // Update the winner's bidsWon field
         await User.findByIdAndUpdate(highestBid.bidderUser._id, {
           $addToSet: { bidsWon: auction._id },
+        });
+
+        // Award XP for winning auction (non-blocking)
+        const winXP = calculateWinXP(highestBid.usdcValue || 0);
+        awardXP({
+          userId: highestBid.bidderUser._id,
+          amount: winXP,
+          action: 'WIN_AUCTION',
+          metadata: {
+            auctionId: auction._id,
+            auctionName: auction.auctionName,
+            bidAmount: highestBid.bidAmount,
+            usdValue: highestBid.usdcValue,
+          },
+        }).catch((err) => {
+          console.error('⚠️ Failed to award XP for auction win:', err);
         });
 
         console.log("[AUCTION END] Winning bid determined:", highestBid);

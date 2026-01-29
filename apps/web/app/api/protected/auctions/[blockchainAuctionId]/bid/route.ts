@@ -7,6 +7,7 @@ import WeeklyBidderLeaderboard from '@/utils/schemas/WeeklyBidderLeaderboard';
 import { fetchTokenPrice } from '@/utils/tokenPrice';
 import { getWeekBoundaries } from '@/utils/weekHelpers';
 import { authenticateRequest } from '@/utils/authService';
+import { awardXP, calculateBidXP } from '@/utils/xpService';
 
 export async function POST(req: NextRequest) {
   console.log("=== BID API ROUTE STARTED ===");
@@ -175,6 +176,27 @@ export async function POST(req: NextRequest) {
       console.log("✅ User updated with participated auction");
     } else {
       console.log("ℹ️ User already has this auction in participated auctions");
+    }
+
+    // Award XP for bidding (only if not bidding on own auction)
+    if (auction.hostedBy.toString() !== user._id.toString()) {
+      const bidXP = calculateBidXP(usdcValue || 0);
+      awardXP({
+        userId: user._id,
+        amount: bidXP,
+        action: 'BID',
+        metadata: {
+          auctionId: auction._id,
+          bidAmount,
+          usdValue: usdcValue,
+          currency: auction.currency,
+        },
+      }).catch((err) => {
+        console.error('⚠️ Failed to award XP for bid:', err);
+      });
+      console.log(`✅ Awarded ${bidXP} XP for bid`);
+    } else {
+      console.log('ℹ️ No XP awarded (bidding on own auction)');
     }
 
     // Update weekly leaderboard if bid is >= $10 USD and user is not the auction host
