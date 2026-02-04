@@ -189,7 +189,7 @@ export async function POST(req: NextRequest) {
             auctionId: auction._id,
             auctionName: auction.auctionName,
             bidAmount: highestBid.bidAmount,
-            usdValue: highestBid.usdcValue,
+            usdValue: highestBid.usdcValue ?? undefined,
           },
         }).catch((err) => {
           console.error('⚠️ Failed to award XP for auction win:', err);
