@@ -22,6 +22,7 @@ export default function AggregateConnector() {
                     const accessToken = await getAccessToken();
                     const response = await fetch('/api/leaderboard/user-stats', {
                         headers: {
+                            "x-user-social-id": user.socialId,
                             'Authorization': `Bearer ${accessToken}`
                         }
                     });
