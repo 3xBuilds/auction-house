@@ -181,20 +181,23 @@ export async function POST(req: NextRequest) {
     // Award XP for bidding (only if not bidding on own auction)
     if (auction.hostedBy.toString() !== user._id.toString()) {
       const bidXP = calculateBidXP(usdcValue || 0);
-      awardXP({
-        userId: user._id,
-        amount: bidXP,
-        action: 'BID',
-        metadata: {
-          auctionId: auction._id,
-          bidAmount,
-          usdValue: usdcValue,
-          currency: auction.currency,
-        },
-      }).catch((err) => {
+      try {
+        await awardXP({
+          userId: user._id,
+          amount: bidXP,
+          action: 'BID',
+          metadata: {
+            auctionId: auction._id,
+            auctionName: auction.auctionName,
+            bidAmount,
+            usdValue: usdcValue,
+            currency: auction.currency,
+          },
+        });
+        console.log(`✅ Awarded ${bidXP} XP for bid`);
+      } catch (err) {
         console.error('⚠️ Failed to award XP for bid:', err);
-      });
-      console.log(`✅ Awarded ${bidXP} XP for bid`);
+      }
     } else {
       console.log('ℹ️ No XP awarded (bidding on own auction)');
     }

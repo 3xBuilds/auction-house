@@ -181,19 +181,22 @@ export async function POST(req: NextRequest) {
 
         // Award XP for winning auction (non-blocking)
         const winXP = calculateWinXP(highestBid.usdcValue || 0);
-        awardXP({
-          userId: highestBid.bidderUser._id,
-          amount: winXP,
-          action: 'WIN_AUCTION',
-          metadata: {
-            auctionId: auction._id,
-            auctionName: auction.auctionName,
-            bidAmount: highestBid.bidAmount,
-            usdValue: highestBid.usdcValue ?? undefined,
-          },
-        }).catch((err) => {
+        try {
+          await awardXP({
+            userId: highestBid.bidderUser._id,
+            amount: winXP,
+            action: 'WIN_AUCTION',
+            metadata: {
+              auctionId: auction._id,
+              auctionName: auction.auctionName,
+              bidAmount: highestBid.bidAmount,
+              usdValue: highestBid.usdcValue ?? undefined,
+            },
+          });
+          console.log(`✅ Awarded ${winXP} XP for winning auction`);
+        } catch (err) {
           console.error('⚠️ Failed to award XP for auction win:', err);
-        });
+        }
 
         console.log("[AUCTION END] Winning bid determined:", highestBid);
 
