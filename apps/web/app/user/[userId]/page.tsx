@@ -353,14 +353,11 @@ export default function UserPage() {
 
           {/* XP Stats Cards */}
           {xpStats && (() => {
-            const calculateLevelXP = (level: number) => {
-              return Math.floor(100 * Math.pow(1.5, level - 1));
-            };
-            
-            const currentLevelXP = calculateLevelXP(xpStats.level);
-            const xpInCurrentLevel = xpStats.totalXP - Array.from({length: xpStats.level - 1}, (_, i) => calculateLevelXP(i + 1)).reduce((a, b) => a + b, 0);
-            const xpNeededForNextLevel = xpInCurrentLevel + xpStats.xpToNextLevel;
-            const progressPercentage = Math.min((xpInCurrentLevel / xpNeededForNextLevel) * 100, 100);
+            const xpForNextLevel = xpStats.xpToNextLevel;
+            const seasonXP = xpStats.currentSeasonXP;
+            const progressPercentage = xpForNextLevel > 0
+              ? Math.min((seasonXP / xpForNextLevel) * 100, 100)
+              : 100;
             
             return (
               <div className="space-y-4 mt-4">
@@ -374,7 +371,7 @@ export default function UserPage() {
                       <div>
                         <div className="text-white font-bold text-lg">Level {xpStats.level}</div>
                         <div className="text-sm text-purple-200">
-                          {xpInCurrentLevel.toLocaleString()} / {xpNeededForNextLevel.toLocaleString()} XP
+                          {seasonXP.toLocaleString()} / {xpForNextLevel.toLocaleString()} XP
                         </div>
                       </div>
                     </div>
@@ -393,7 +390,7 @@ export default function UserPage() {
                   </div>
                   <div className="flex items-center justify-between mt-2 text-xs text-purple-200">
                     <span>Current Level</span>
-                    <span>{xpStats.xpToNextLevel > 0 ? `${xpStats.xpToNextLevel.toLocaleString()} XP to Level ${xpStats.level + 1}` : 'Max Level Progress'}</span>
+                    <span>{xpForNextLevel > 0 ? `${xpForNextLevel.toLocaleString()} XP to Level ${xpStats.level + 1}` : 'Max Level Progress'}</span>
                   </div>
                 </div>
 
