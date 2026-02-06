@@ -92,8 +92,78 @@ export async function POST(req: NextRequest) {
     // Check if auction is currently active
     const currentDate = new Date();
 
+    const finalizeWinner = async (
+      winnerUser: any,
+      bidAmount: number,
+      usdValue: number | null
+    ) => {
+      auction.winningBid = winnerUser._id;
+
+      // Update the winner's bidsWon field
+      await User.findByIdAndUpdate(winnerUser._id, {
+        $addToSet: { bidsWon: auction._id },
+      });
+
+      // Award XP for winning auction (non-blocking)
+      const winXP = calculateWinXP(usdValue || 0);
+      try {
+        await awardXP({
+          userId: winnerUser._id,
+          amount: winXP,
+          action: 'WIN_AUCTION',
+          metadata: {
+            auctionId: auction._id,
+            auctionName: auction.auctionName,
+            bidAmount,
+            usdValue: usdValue ?? undefined,
+          },
+        });
+        console.log(`✅ Awarded ${winXP} XP for winning auction`);
+      } catch (err) {
+        console.error('⚠️ Failed to award XP for auction win:', err);
+      }
+
+      const { token, url } = winnerUser.notificationDetails || {};
+
+      if (token && url) {
+        // Send notification to winner
+        const notificationTitle = `🎉 You won the ${auction.auctionName}!`;
+        const notificationBody = `Contact the host here:`;
+        const targetUrl = `${
+          process.env.NEXT_PUBLIC_URL || "http://localhost:3000"
+        }/user/${auction.hostedBy._id}`;
+
+        await sendNotification(
+          url,
+          token,
+          notificationTitle,
+          notificationBody,
+          targetUrl
+        );
+      }
+
+      const { token: tokenHost, url: urlHost } =
+        auction.hostedBy.notificationDetails || {};
+
+      if (tokenHost && urlHost) {
+        // Send notification to host
+        const notificationTitle = `🏆 Your auction "${auction.auctionName}" has ended!`;
+        const notificationBody = `Contact the winner here:`;
+        const targetUrl = `${
+          process.env.NEXT_PUBLIC_URL || "http://localhost:3000"
+        }/user/${auction.winningBid}`;
+        await sendNotification(
+          urlHost,
+          tokenHost,
+          notificationTitle,
+          notificationBody,
+          targetUrl
+        );
+      }
+    };
+
     // Update auction with bidders data from contract
-    if (contractBidders && contractBidders.length > 0) {
+    if (Array.isArray(contractBidders) && contractBidders.length > 0) {
       // Clear existing bidders array
       auction.bidders = [];
 
@@ -172,74 +242,41 @@ export async function POST(req: NextRequest) {
             : prev;
         });
 
-        auction.winningBid = highestBid.bidderUser._id;
-
-        // Update the winner's bidsWon field
-        await User.findByIdAndUpdate(highestBid.bidderUser._id, {
-          $addToSet: { bidsWon: auction._id },
-        });
-
-        // Award XP for winning auction (non-blocking)
-        const winXP = calculateWinXP(highestBid.usdcValue || 0);
-        try {
-          await awardXP({
-            userId: highestBid.bidderUser._id,
-            amount: winXP,
-            action: 'WIN_AUCTION',
-            metadata: {
-              auctionId: auction._id,
-              auctionName: auction.auctionName,
-              bidAmount: highestBid.bidAmount,
-              usdValue: highestBid.usdcValue ?? undefined,
-            },
-          });
-          console.log(`✅ Awarded ${winXP} XP for winning auction`);
-        } catch (err) {
-          console.error('⚠️ Failed to award XP for auction win:', err);
-        }
-
         console.log("[AUCTION END] Winning bid determined:", highestBid);
-
-        const { token, url } = highestBid.bidderUser.notificationDetails || {};
-
-        if (token && url) {
-          // Send notification to winner
-          const notificationTitle = `🎉 You won the ${auction.auctionName}!`;
-          const notificationBody = `Contact the host here:`;
-          const targetUrl = `${
-            process.env.NEXT_PUBLIC_URL || "http://localhost:3000"
-          }/user/${auction.hostedBy._id}`;
-
-          await sendNotification(
-            url,
-            token,
-            notificationTitle,
-            notificationBody,
-            targetUrl
-          );
-        }
-
-        const { token: tokenHost, url: urlHost } =
-      auction.hostedBy.notificationDetails || {};
-
-    if (tokenHost && urlHost) {
-      // Send notification to host
-      const notificationTitle = `🏆 Your auction "${auction.auctionName}" has ended!`;
-      const notificationBody = `Contact the winner here:`;
-      const targetUrl = `${
-        process.env.NEXT_PUBLIC_URL || "http://localhost:3000"
-      }/user/${auction.winningBid}`;
-      await sendNotification(
-        urlHost,
-        tokenHost,
-        notificationTitle,
-        notificationBody,
-        targetUrl
-      );
-    }
+        await finalizeWinner(
+          highestBid.bidderUser,
+          highestBid.bidAmount,
+          highestBid.usdcValue ?? null
+        );
       } else {
         auction.winningBid = "no_bids";
       }
+    } else if (auction.bidders && auction.bidders.length > 0) {
+      const highestBid = auction.bidders.reduce((prev, current) => {
+        const prevValue = prev.usdcValue ?? prev.bidAmount;
+        const currentValue = current.usdcValue ?? current.bidAmount;
+        return currentValue > prevValue ? current : prev;
+      });
+
+      const winnerUser = await User.findById(highestBid.user);
+      if (!winnerUser) {
+        return NextResponse.json(
+          { error: "Winner not found" },
+          { status: 404 }
+        );
+      }
+
+      console.log("[AUCTION END] Winning bid determined from DB:", {
+        userId: winnerUser._id,
+        bidAmount: highestBid.bidAmount,
+        usdcValue: highestBid.usdcValue,
+      });
+
+      await finalizeWinner(
+        winnerUser,
+        highestBid.bidAmount,
+        highestBid.usdcValue ?? null
+      );
     } else {
       auction.winningBid = "no_bids";
     }
