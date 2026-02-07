@@ -1,5 +1,4 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
-import { unique } from 'next/dist/build/utils';
 
 enum SocialPlatform {
   TWITTER = 'TWITTER',
