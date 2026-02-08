@@ -184,6 +184,7 @@ export async function awardXP({
 export interface LeaderboardEntry {
   userId: string;
   username?: string;
+  pfpUrl?: string;
   socialId?: string;
   socialPlatform?: string;
   currentSeasonXP: number;
@@ -207,11 +208,12 @@ export async function getSeasonLeaderboard(
       .sort({ totalXP: -1 })
       .skip(offset)
       .limit(limit)
-      .populate('user', 'username socialId socialPlatform level totalXP');
+      .populate('user', 'username socialId socialPlatform level totalXP twitterProfile');
     
     return leaderboardEntries.map((entry, index) => ({
       userId: entry.user._id.toString(),
-      username: (entry.user as any).username,
+      username: (entry.user as any).twitterProfile?.username,
+      pfpUrl: (entry.user as any).twitterProfile?.profileImageUrl,
       socialId: (entry.user as any).socialId,
       socialPlatform: (entry.user as any).socialPlatform,
       currentSeasonXP: entry.totalXP,
@@ -225,12 +227,13 @@ export async function getSeasonLeaderboard(
       .sort({ currentSeasonXP: -1 })
       .skip(offset)
       .limit(limit)
-      .select('username socialId socialPlatform currentSeasonXP totalXP level');
+      .select('username socialId socialPlatform currentSeasonXP totalXP level twitterProfile');
     
     return users.map((user, index) => ({
       userId: user._id.toString(),
-      username: user.username,
+      username: user.twitterProfile?.username || user.username,
       socialId: user.socialId,
+      pfpUrl: user.twitterProfile?.profileImageUrl,
       socialPlatform: user.socialPlatform,
       currentSeasonXP: user.currentSeasonXP,
       totalXP: user.totalXP,
@@ -251,11 +254,12 @@ export async function getAllTimeLeaderboard(
     .sort({ totalXP: -1 })
     .skip(offset)
     .limit(limit)
-    .select('username socialId socialPlatform currentSeasonXP totalXP level');
+    .select('username socialId socialPlatform currentSeasonXP totalXP level twitterProfile');
   
   return users.map((user, index) => ({
     userId: user._id.toString(),
-    username: user.username,
+    username: user.twitterProfile?.username || user.username,
+    pfpUrl: user.twitterProfile?.profileImageUrl,
     socialId: user.socialId,
     socialPlatform: user.socialPlatform,
     currentSeasonXP: user.currentSeasonXP,
