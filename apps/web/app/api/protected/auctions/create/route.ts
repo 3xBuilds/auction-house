@@ -172,18 +172,29 @@ export async function POST(req: NextRequest) {
 
     await user.save();
 
-    // Award XP for creating auction (non-blocking)
-    awardXP({
-      userId: user._id,
-      amount: XP_REWARDS.CREATE_AUCTION,
-      action: 'CREATE_AUCTION',
-      metadata: {
-        auctionId: newAuction._id,
-        auctionName: newAuction.auctionName,
-      },
-    }).catch((err) => {
+    // Award XP for creating auction
+    let xpGain = undefined;
+    try {
+      const xpResult = await awardXP({
+        userId: user._id,
+        amount: XP_REWARDS.CREATE_AUCTION,
+        action: 'CREATE_AUCTION',
+        metadata: {
+          auctionId: newAuction._id,
+          auctionName: newAuction.auctionName,
+        },
+      });
+      if (xpResult.success) {
+        xpGain = {
+          amount: xpResult.amount,
+          action: xpResult.action,
+          newLevel: xpResult.newLevel,
+          leveledUp: xpResult.leveledUp,
+        };
+      }
+    } catch (err) {
       console.error('⚠️ Failed to award XP for auction creation:', err);
-    });
+    }
 
     // Schedule jobs (non-blocking)
     try {

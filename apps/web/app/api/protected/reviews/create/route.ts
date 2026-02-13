@@ -102,19 +102,30 @@ export async function POST(req: NextRequest) {
       totalReviews,
     });
 
-    // Award XP for leaving review (non-blocking)
-    awardXP({
-      userId: auction.winningBid,
-      amount: XP_REWARDS.LEAVE_REVIEW,
-      action: 'LEAVE_REVIEW',
-      metadata: {
-        auctionId: auction._id,
-        rating,
-        reviewId: review._id,
-      },
-    }).catch((err) => {
+    // Award XP for leaving review
+    let xpGain = undefined;
+    try {
+      const xpResult = await awardXP({
+        userId: auction.winningBid,
+        amount: XP_REWARDS.LEAVE_REVIEW,
+        action: 'LEAVE_REVIEW',
+        metadata: {
+          auctionId: auction._id,
+          rating,
+          reviewId: review._id,
+        },
+      });
+      if (xpResult.success) {
+        xpGain = {
+          amount: xpResult.amount,
+          action: xpResult.action,
+          newLevel: xpResult.newLevel,
+          leveledUp: xpResult.leveledUp,
+        };
+      }
+    } catch (err) {
       console.error('⚠️ Failed to award XP for review:', err);
-    });
+    }
 
     return NextResponse.json({ 
       success: true, 
@@ -128,6 +139,8 @@ export async function POST(req: NextRequest) {
       hostUpdatedRating: {
         averageRating: Math.round(averageRating * 100) / 100,
         totalReviews,
+      },
+      xpGain,
       }
     }, { status: 201 });
 

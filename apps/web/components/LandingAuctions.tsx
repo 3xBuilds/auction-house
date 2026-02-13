@@ -61,6 +61,8 @@ import ScrollingName from "./utils/ScrollingName";
 import { Users } from "lucide-react";
 import AuctionCard from "./AuctionCard";
 import LeaderboardSidebar from "./LeaderboardSidebar";
+import { useXP } from "@/contexts/XPContext";
+import { handleXPGain } from "./XPToast";
 
 interface Bidder {
   user: string;
@@ -127,6 +129,7 @@ const LandingAuctions: React.FC = () => {
   const [page, setPage] = useState(1);
   const [loadingToastId, setLoadingToastId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { addXP } = useXP();
   const [currentBid, setCurrentBid] = useState<{
     auctionId: string;
     amount: number;
@@ -433,6 +436,12 @@ const LandingAuctions: React.FC = () => {
         throw new Error(
           data.error || `API request failed with status ${response.status}`
         );
+      }
+
+      // Handle XP gain
+      if (data.xpGain) {
+        addXP(data.xpGain);
+        handleXPGain(data.xpGain);
       }
 
       toast.success("Bid placed!");

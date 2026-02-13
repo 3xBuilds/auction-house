@@ -8,6 +8,8 @@ import toast from 'react-hot-toast';
 import Heading from './UI/Heading';
 import { getAccessToken } from '@privy-io/react-auth';
 import RatingStars from './UI/RatingStars';
+import { useXP } from '@/contexts/XPContext';
+import { handleXPGain } from './XPToast';
 
 interface ReviewFormProps {
   auctionId: string;
@@ -27,6 +29,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   const [rating, setRating] = useState<number>(0);
   const [comment, setComment] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const { addXP } = useXP();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,6 +67,12 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to submit review');
+      }
+
+      // Handle XP gain
+      if (data.xpGain) {
+        addXP(data.xpGain);
+        handleXPGain(data.xpGain);
       }
 
       toast.success('Review submitted successfully!');

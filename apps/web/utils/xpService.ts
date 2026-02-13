@@ -103,7 +103,14 @@ export async function awardXP({
   amount,
   action,
   metadata = {},
-}: AwardXPParams): Promise<{ success: boolean; newLevel?: number; leveledUp?: boolean; error?: string }> {
+}: AwardXPParams): Promise<{ 
+  success: boolean; 
+  amount?: number;
+  action?: string;
+  newLevel?: number; 
+  leveledUp?: boolean; 
+  error?: string 
+}> {
   try {
     await dbConnect();
     
@@ -171,6 +178,8 @@ export async function awardXP({
     
     return {
       success: true,
+      amount,
+      action,
       newLevel,
       leveledUp,
     };

@@ -179,13 +179,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Award XP for bidding (only if not bidding on own auction)
+    let xpGain = undefined;
     if (auction.hostedBy.toString() !== user._id.toString()) {
       const bidXP = calculateBidXP(usdcValue || 0);
       try {
-        await awardXP({
+        const xpResult = await awardXP({
           userId: user._id,
           amount: bidXP,
-          action: 'BID',
+          action: 'BID_PLACED',
           metadata: {
             auctionId: auction._id,
             auctionName: auction.auctionName,
@@ -194,6 +195,14 @@ export async function POST(req: NextRequest) {
             currency: auction.currency,
           },
         });
+        if (xpResult.success) {
+          xpGain = {
+            amount: xpResult.amount,
+            action: xpResult.action,
+            newLevel: xpResult.newLevel,
+            leveledUp: xpResult.leveledUp,
+          };
+        }
         console.log(`✅ Awarded ${bidXP} XP for bid`);
       } catch (err) {
         console.error('⚠️ Failed to award XP for bid:', err);

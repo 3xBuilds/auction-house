@@ -62,6 +62,8 @@ import sdk from "@farcaster/miniapp-sdk";
 import { useNavigateWithLoader } from "@/utils/useNavigateWithLoader";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import AggregateConnector from "./utils/aggregateConnector";
+import { useXP } from "@/contexts/XPContext";
+import { handleXPGain } from "./XPToast";
 
 interface Bidder {
   displayName: string;
@@ -124,6 +126,7 @@ export default function BidPage() {
   const blockchainAuctionId = params.blockchainAuctionId as string;
 
   const navigate = useNavigateWithLoader();
+  const { addXP } = useXP();
 
   const [auctionData, setAuctionData] = useState<AuctionData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -577,6 +580,12 @@ export default function BidPage() {
         throw new Error(
           data.error || `API request failed with status ${response.status}`
         );
+      }
+
+      // Handle XP gain
+      if (data.xpGain) {
+        addXP(data.xpGain);
+        handleXPGain(data.xpGain);
       }
 
       toast.success("Bid placed!");
