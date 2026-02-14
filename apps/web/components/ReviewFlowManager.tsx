@@ -152,7 +152,7 @@ const ReviewFlowManager: React.FC<ReviewFlowManagerProps> = ({ isMobile = false 
   };
 
   const handleReviewSuccess = () => {
-    setSelectedReviewAuction(null);
+    handleCloseDrawer();
     fetchPendingDeliveries();
   };
 
