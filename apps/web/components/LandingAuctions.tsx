@@ -61,6 +61,7 @@ import ScrollingName from "./utils/ScrollingName";
 import { Users } from "lucide-react";
 import AuctionCard from "./AuctionCard";
 import LeaderboardSidebar from "./LeaderboardSidebar";
+import { useTokenPrices } from "@/hooks/useTokenPrices";
 
 interface Bidder {
   user: string;
@@ -138,6 +139,10 @@ const LandingAuctions: React.FC = () => {
   const [currencyFilter, setCurrencyFilter] = useState<
     "all" | "usdc" | "creator-coins"
   >("all");
+
+  // Batch fetch token prices for all auctions
+  const tokenAddresses = auctions.map((auction) => auction.tokenAddress);
+  const { priceMap } = useTokenPrices(tokenAddresses);
 
   // Recent Activity Ticker State
   const [recentBids, setRecentBids] = useState<{
@@ -1173,6 +1178,7 @@ const LandingAuctions: React.FC = () => {
             onNavigate={navigate}
             renderDescription={renderDescription}
             onBidClick={openBidDrawer}
+            tokenPrice={priceMap[auction.tokenAddress]}
           />
         ))}
 

@@ -94,6 +94,10 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       data: enhancedBids
+    }, {
+      headers: {
+        'Cache-Control': 's-maxage=15, stale-while-revalidate=30'
+      }
     });
 
   } catch (error) {

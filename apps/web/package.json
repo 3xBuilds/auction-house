@@ -26,6 +26,7 @@
     "@repo/contracts": "*",
     "@repo/queue": "*",
     "@solana-program/system": "^0.10.0",
+    "@tanstack/react-query": "^5.90.21",
     "autoprefixer": "^10.4.21",
     "bullmq": "^5.34.8",
     "class-variance-authority": "^0.7.1",

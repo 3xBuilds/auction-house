@@ -147,23 +147,49 @@ export default function UserPage() {
           totalTradingVolume
         });
 
-        // Fetch XP stats
+        // Fetch XP stats, reviews, and bids in parallel for faster loading
+        const parallelFetches: Promise<any>[] = [];
+        
         if (data.user.socialId) {
-          const xpResponse = await fetch('/api/leaderboard/user-stats', {
-            headers: {
-              'x-user-social-id': data.user.socialId
-            }
-          });
-          const xpData = await xpResponse.json();
-          if (xpData.success) {
-            setXpStats({
-              level: xpData.stats.level,
-              currentSeasonXP: xpData.stats.currentSeasonXP,
-              totalXP: xpData.stats.totalXP,
-              xpToNextLevel: xpData.stats.xpToNextLevel
-            });
-          }
+          parallelFetches.push(
+            fetch('/api/leaderboard/user-stats', {
+              headers: { 'x-user-social-id': data.user.socialId }
+            }).then(res => res.json()).then(xpData => {
+              if (xpData.success) {
+                setXpStats({
+                  level: xpData.stats.level,
+                  currentSeasonXP: xpData.stats.currentSeasonXP,
+                  totalXP: xpData.stats.totalXP,
+                  xpToNextLevel: xpData.stats.xpToNextLevel
+                });
+              }
+            }).catch(err => console.error("Failed to fetch XP stats:", err))
+          );
         }
+
+        // Prefetch reviews
+        parallelFetches.push(
+          fetch(`/api/reviews/user/${userId}`)
+            .then(res => res.json())
+            .then(reviewsData => {
+              if (reviewsData.reviews) {
+                setReviews(reviewsData.reviews);
+              }
+            }).catch(err => console.error("Failed to fetch reviews:", err))
+        );
+
+        // Prefetch bids
+        parallelFetches.push(
+          fetch(`/api/users/bids?userId=${userId}&limit=5`)
+            .then(res => res.json())
+            .then(bidsData => {
+              if (bidsData.bids) {
+                setRecentBids(bidsData.bids);
+              }
+            }).catch(err => console.error("Failed to fetch bids:", err))
+        );
+
+        await Promise.all(parallelFetches);
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -175,50 +201,6 @@ export default function UserPage() {
       fetchUserData();
     }
   }, [userId]);
-
-  useEffect(() => {
-    const fetchReviews = async () => {
-      if (!userId || activeTab !== "reviews") return;
-      
-      try {
-        setReviewsLoading(true);
-        const response = await fetch(`/api/reviews/user/${userId}`);
-        
-        if (response.ok) {
-          const data = await response.json();
-          setReviews(data.reviews || []);
-        }
-      } catch (err) {
-        console.error("Failed to fetch reviews:", err);
-      } finally {
-        setReviewsLoading(false);
-      }
-    };
-
-    fetchReviews();
-  }, [userId, activeTab]);
-
-  useEffect(() => {
-    const fetchRecentBids = async () => {
-      if (!userId || activeTab !== "activity") return;
-      
-      try {
-        setBidsLoading(true);
-        const response = await fetch(`/api/users/bids?userId=${userId}&limit=5`);
-        
-        if (response.ok) {
-          const data = await response.json();
-          setRecentBids(data.bids || []);
-        }
-      } catch (err) {
-        console.error("Failed to fetch recent bids:", err);
-      } finally {
-        setBidsLoading(false);
-      }
-    };
-
-    fetchRecentBids();
-  }, [userId, activeTab]);
 
   const formatVolume = (volume: number) => {
     if (volume >= 1000000) {

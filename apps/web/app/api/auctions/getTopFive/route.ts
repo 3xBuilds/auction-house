@@ -288,7 +288,12 @@ export async function GET(req: NextRequest) {
       total: totalCount,
       page,
       hasMore: skip + auctionsWithStats.length < totalCount
-    }, { status: 200 });
+    }, { 
+      status: 200,
+      headers: {
+        'Cache-Control': 's-maxage=30, stale-while-revalidate=60'
+      }
+    });
 
   } catch (error) {
     console.error('Error fetching top 5 running auctions:', error);

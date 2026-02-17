@@ -1,8 +1,8 @@
-import React, { useEffect } from "react";
+import React from "react";
 import Image from "next/image";
 import { Users, Bot, User } from "lucide-react";
 import ScrollingName from "./utils/ScrollingName";
-import { fetchTokenPrice } from "@/utils/tokenPrice";
+import { useTokenPrice } from "@/hooks/useTokenPrices";
 
 interface Bidder {
   user: string;
@@ -56,6 +56,7 @@ interface AuctionCardProps {
   onNavigate: (path: string) => void;
   renderDescription: (description: string) => React.ReactNode;
   onBidClick?: (auction: Auction) => void;
+  tokenPrice?: number | null; // Optional: pass price from parent to avoid individual fetches
 }
 
 const formatTimeRemaining = (hours: number): string => {
@@ -73,24 +74,13 @@ const AuctionCard: React.FC<AuctionCardProps> = ({
   onNavigate,
   renderDescription,
   onBidClick,
+  tokenPrice: priceFromParent,
 }) => {
-
-  const [tokenPrice, setTokenPrice] = React.useState<number | null>(null);
-
-  async function getTokenPrice() {
-    try{
-      const response = await fetchTokenPrice(auction.tokenAddress);
-      setTokenPrice(response);
-    }
-    catch (error) {
-      console.error("Error fetching token price:", error);
-    }
-  }
-
-  useEffect(() => {
-    if(auction && auction.tokenAddress)
-    getTokenPrice();
-  }, [auction]);
+  // Use provided price if available, otherwise fetch (for standalone usage)
+  const { price: fetchedPrice } = useTokenPrice(
+    priceFromParent === undefined ? auction.tokenAddress : undefined
+  );
+  const tokenPrice = priceFromParent ?? fetchedPrice;
 
   return (
     <div

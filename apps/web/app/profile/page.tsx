@@ -126,32 +126,34 @@ export default function ProfilePage() {
           setProfileData(data.user)
           setStatistics(data.statistics)
           
-          // Fetch reviews
-          const reviewsResponse = await fetch(`/api/reviews/user/${data.user._id}`)
-          const reviewsData = await reviewsResponse.json()
+          // Fetch reviews, bids, and XP stats in parallel
+          const [reviewsResponse, bidsResponse, xpResponse] = await Promise.all([
+            fetch(`/api/reviews/user/${data.user._id}`),
+            fetch(`/api/users/bids?userId=${data.user._id}&limit=5`, {
+              headers: {
+                'Authorization': `Bearer ${accessToken}`
+              }
+            }),
+            fetch('/api/leaderboard/user-stats', {
+              headers: {
+                'x-user-social-id': user?.socialId || '',
+                'Authorization': `Bearer ${accessToken}`
+              }
+            })
+          ]);
+
+          const [reviewsData, bidsData, xpData] = await Promise.all([
+            reviewsResponse.json(),
+            bidsResponse.json(),
+            xpResponse.json()
+          ]);
+
           if (reviewsData.success) {
             setReviews(reviewsData.reviews)
           }
-
-          // Fetch recent bids
-          const bidsResponse = await fetch(`/api/users/bids?userId=${data.user._id}&limit=5`, {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`
-            }
-          })
-          const bidsData = await bidsResponse.json()
           if (bidsData.success) {
             setRecentBids(bidsData.bids)
           }
-
-          // Fetch XP stats
-          const xpResponse = await fetch('/api/leaderboard/user-stats', {
-            headers: {
-              'x-user-social-id': user?.socialId || '',
-              'Authorization': `Bearer ${accessToken}`
-            }
-          })
-          const xpData = await xpResponse.json()
           if (xpData.success) {
             setXpStats({
               level: xpData.stats.level,

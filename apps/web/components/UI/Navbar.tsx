@@ -22,6 +22,7 @@ import { useCallback, useState, useEffect } from "react";
 import { getAccessToken } from '@privy-io/react-auth';
 import { useXPNotification } from "@/utils/providers/xpNotificationContext";
 import XPProgressBar from "./XPProgressBar";
+import { useXPStats } from "@/hooks/useXPStats";
 
 export default function Navbar() {
   const { wallets } = useWallets();
@@ -44,7 +45,14 @@ export default function Navbar() {
 
   const { authenticated, getAccessToken } = usePrivy();
   const { refreshCounter, setXPStats } = useXPNotification();
-  const [xpStats, setXpStats] = useState<{ level: number; currentSeasonXP: number; totalXP: number; xpToNextLevel: number } | null>(null);
+  
+  // Use cached XP stats hook to prevent refetching on every navigation
+  const { xpStats } = useXPStats({
+    socialId: user?.socialId,
+    getAccessToken,
+    refreshCounter,
+    onSuccess: setXPStats,
+  });
 
   const [pastDrawerOpen, setPastDrawerOpen] = useState(false);
   const [pastAuctions, setPastAuctions] = useState<any[]>([]);
@@ -76,39 +84,6 @@ export default function Navbar() {
       fetchPastAuctions();
     }
   }, [pastDrawerOpen, fetchPastAuctions]);
-
-  useEffect(() => {
-    if (user) {
-      const fetchXPStats = async () => {
-        try {
-          const accessToken = await getAccessToken();
-          const response = await fetch(`/api/leaderboard/user-stats`, {
-            headers: {
-              "x-user-social-id": user.socialId,
-              'Authorization': `Bearer ${accessToken}`
-            }
-          });
-          const data = await response.json();
-          console.log('Fetched XP stats:', data);
-          if (data.success) {
-            const stats = {
-              xpToNextLevel: data.stats.xpToNextLevel,
-              level: data.stats.level,
-              currentSeasonXP: data.stats.currentSeasonXP,
-              totalXP: data.stats.totalXP
-            };
-            setXpStats(stats);
-            setXPStats(stats); // Also update the context
-          }
-        } catch (err) {
-          console.error('Failed to fetch XP stats:', err);
-        }
-      };
-
-      if(user)
-      fetchXPStats();
-    }
-  }, [user, getAccessToken, refreshCounter, setXPStats]);
 
   const formatEndedLabel = (endDate: string) => {
     const end = new Date(endDate);

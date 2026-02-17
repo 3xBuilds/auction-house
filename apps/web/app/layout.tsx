@@ -9,6 +9,7 @@ import { Toaster } from "react-hot-toast";
 import { XPNotificationProvider } from "@/utils/providers/xpNotificationContext";
 import XPParticles from "@/components/UI/XPParticles";
 import DailyLoginClaimDrawer from "@/components/DailyLoginClaimDrawer";
+import { QueryProvider } from "@/utils/providers/queryProvider";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -25,9 +26,10 @@ export default function RootLayout({
       <body
         className={`${poppins.className} antialiased text-white max-lg:pb-10`}
       >
-        <NProgressProvider>
-          <MiniKitContextProvider>
-            <XPNotificationProvider>
+        <QueryProvider>
+          <NProgressProvider>
+            <MiniKitContextProvider>
+              <XPNotificationProvider>
               <XPParticles />
               <DailyLoginClaimDrawer />
               <Navbar/>
@@ -58,9 +60,10 @@ export default function RootLayout({
                   },
                 }}
               />
-            </XPNotificationProvider>
-          </MiniKitContextProvider>
-        </NProgressProvider>
+              </XPNotificationProvider>
+            </MiniKitContextProvider>
+          </NProgressProvider>
+        </QueryProvider>
       </body>
     </html>
   );

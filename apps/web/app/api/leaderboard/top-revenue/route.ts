@@ -203,6 +203,10 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       data: enhancedUsers
+    }, {
+      headers: {
+        'Cache-Control': 's-maxage=60, stale-while-revalidate=120'
+      }
     });
   } catch (error) {
     console.error('Error fetching top revenue users:', error);

@@ -192,7 +192,12 @@ export async function GET(req: NextRequest) {
       success: true,
       auctions: auctionsWithStats,
       total: endedAuctions.length
-    }, { status: 200 });
+    }, { 
+      status: 200,
+      headers: {
+        'Cache-Control': 's-maxage=60, stale-while-revalidate=120'
+      }
+    });
 
   } catch (error) {
     console.error('Error fetching ended auctions:', error);
