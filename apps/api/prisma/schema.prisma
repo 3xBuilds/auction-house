@@ -1,0 +1,438 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum SocialPlatform {
+  YOUTUBE
+  TWITTER
+  INSTAGRAM
+  TIKTOK
+}
+
+enum Role {
+  USER
+  SUPERADMIN
+}
+
+enum EmailOtpPurpose {
+  VERIFY_EMAIL
+}
+
+model User {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  username        String?   @unique
+  avatarUrl       String?
+  role            Role      @default(USER)
+  email           String?   @unique
+  emailVerifiedAt DateTime?
+
+  wallets        Wallet[]
+  sessions       Session[]
+  socials        SocialAccount[]
+  oauthStates    OAuthState[]
+  creatorProfile CreatorProfile?
+  emailOtps      EmailOtp[]
+  listingBids    ListingBid[]
+}
+
+model EmailOtp {
+  id         String          @id @default(cuid())
+  email      String
+  hashedCode String
+  purpose    EmailOtpPurpose @default(VERIFY_EMAIL)
+  expiresAt  DateTime
+  attempts   Int             @default(0)
+  createdAt  DateTime        @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([email])
+  @@index([expiresAt])
+}
+
+model Wallet {
+  id         String   @id @default(cuid())
+  address    String   @unique
+  chainId    Int
+  isPrimary  Boolean  @default(true)
+  verifiedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model SiweNonce {
+  id        String   @id @default(cuid())
+  nonce     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+}
+
+model OAuthState {
+  id           String         @id @default(cuid())
+  state        String         @unique
+  platform     SocialPlatform
+  codeVerifier String?
+  expiresAt    DateTime
+  createdAt    DateTime       @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model SocialAccount {
+  id                    String         @id @default(cuid())
+  platform              SocialPlatform
+  platformUserId        String
+  username              String?
+  displayName           String?
+  avatarUrl             String?
+  followerCount         Int?
+  followerCountSyncedAt DateTime?
+  accessTokenEncrypted  String
+  refreshTokenEncrypted String?
+  tokenExpiresAt        DateTime?
+  scopes                String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform])
+  @@unique([platform, platformUserId])
+  @@index([userId])
+}
+
+enum CreatorType {
+  HUMAN
+  BOT
+}
+
+enum BookingStatus {
+  CONFIRMED
+  PENDING
+}
+
+/**
+ * Public marketplace identity for a User — separate from wallet/social auth data.
+ */
+model CreatorProfile {
+  id            String   @id @default(cuid())
+  displayName   String
+  username      String?
+  avatarUrl     String?
+  verified      Boolean  @default(false)
+  tags          String[]
+  engagementPct Float?
+  trend         Int[]
+  fromPrice     Int?
+  averageRating Float?
+  totalReviews  Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  auctions     Auction[]
+  bookings     Booking[]
+  listings     Listing[]
+  applications CampaignApplication[]
+  token        CreatorToken?
+}
+
+model Auction {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  currency    String      @default("USDC")
+  minimumBid  Int
+  startDate   DateTime
+  endDate     DateTime
+  imageUrl    String?
+  tags        String[]
+  avgViews    String?
+  createdBy   CreatorType @default(HUMAN)
+  /**
+   * Pins this auction as the dashboard's top featured spot, overriding the highest-bid fallback.
+   */
+  featured    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  hostId String
+  host   CreatorProfile @relation(fields: [hostId], references: [id], onDelete: Cascade)
+
+  bids Bid[]
+
+  @@index([hostId])
+  @@index([endDate])
+}
+
+model Bid {
+  id              String      @id @default(cuid())
+  amount          Int
+  currency        String      @default("USDC")
+  bidderWallet    String
+  bidderName      String
+  bidderAvatarUrl String?
+  source          CreatorType @default(HUMAN)
+  createdAt       DateTime    @default(now())
+
+  auctionId String
+  auction   Auction @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+
+  @@index([auctionId])
+  @@index([createdAt])
+}
+
+model Booking {
+  id        String        @id @default(cuid())
+  brand     String
+  markUrl   String?
+  amount    Int
+  placement String
+  status    BookingStatus @default(CONFIRMED)
+  createdAt DateTime      @default(now())
+
+  creatorId String
+  creator   CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId])
+}
+
+enum CampaignStatus {
+  OPEN
+  IN_REVIEW
+  CLOSED
+}
+
+enum ActivationStatus {
+  LIVE
+  UPCOMING
+  ENDED
+}
+
+/// A brand brief: what a brand is buying. The demand side of the marketplace.
+model Campaign {
+  id         String         @id @default(cuid())
+  name       String
+  brandName  String?
+  budget     Int
+  lookingFor String
+  brief      String?
+  platforms  String[]
+  minReach   Int?
+  status     CampaignStatus @default(OPEN)
+  deadline   DateTime?
+  /// Brand mark shown on the campaign card; falls back to a generated monogram.
+  markUrl    String?
+  createdAt  DateTime       @default(now())
+
+  applications CampaignApplication[]
+
+  @@index([status])
+}
+
+model CampaignApplication {
+  id        String   @id @default(cuid())
+  pitch     String?
+  createdAt DateTime @default(now())
+
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  creatorId String
+  creator   CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, creatorId])
+  @@index([campaignId])
+}
+
+enum PricingType {
+  FIXED
+  AUCTION
+}
+
+/// What a creator is selling. Drives the category sections on the discover page.
+enum ListingCategory {
+  SHOUTOUT
+  SPONSORED_POST
+  VIDEO_INTEGRATION
+  DEDICATED_VIDEO
+  LIVESTREAM
+  PODCAST
+  NEWSLETTER
+  AMA
+  COLLAB
+  CONSULTING
+  OTHER
+}
+
+/// DRAFT is written before the AuctionHouse transaction is sent, so a listing
+/// id exists to pass on-chain. It only becomes ACTIVE once that tx confirms —
+/// or immediately, when the marketplace runs without a deployed contract.
+enum ListingStatus {
+  DRAFT
+  ACTIVE
+  SOLD
+  CANCELLED
+}
+
+/// A unit of media or service a creator sells. Mirrors the AuctionHouse
+/// contract, which stores fixed-price listings and auctions in one mapping and
+/// distinguishes them with a single `isFixedPrice` flag — so both live here,
+/// separated by `pricingType`, and share one on-chain id (this row's `id`).
+model Listing {
+  id             String          @id @default(cuid())
+  title          String
+  description    String?
+  category       ListingCategory @default(OTHER)
+  pricingType    PricingType     @default(FIXED)
+  /// The asking price when pricingType is FIXED, the minimum bid when AUCTION —
+  /// the contract takes the same `_minBidOrPrice` argument for both.
+  price          Int
+  currency       String          @default("USDC")
+  /// Short placement label ("Pinned post"); falls back to the category name.
+  placement      String?
+  platform       SocialPlatform?
+  turnaroundDays Int?
+  /// Remaining slots; 0 reads as sold out.
+  slotsAvailable Int             @default(1)
+  /// When bidding closes / the offer expires. The contract only accepts whole
+  /// hours of duration, so this is rounded up to the next hour on-chain.
+  endDate        DateTime?
+  status         ListingStatus   @default(ACTIVE)
+
+  /// Chain wiring, written once the AuctionHouse tx confirms. Null while the
+  /// contract is unset — the listing is then marketplace-only.
+  chainId      Int?
+  contractAddress String?
+  tokenAddress String?
+  tokenName    String?
+  txHash       String?
+
+  /// One rotating 24h auction owned by SUPERADMIN. Cron settles and clones it.
+  isDaily      Boolean   @default(false)
+  winnerWallet String?
+  settledAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  creatorId String
+  creator   CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  bids ListingBid[]
+
+  @@index([creatorId])
+  @@index([status])
+  @@index([category])
+  @@index([pricingType])
+  @@index([isDaily, status])
+}
+
+model ListingBid {
+  id           String   @id @default(cuid())
+  amount       Int
+  bidderWallet String
+  txHash       String?
+  createdAt    DateTime @default(now())
+
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  bidderUserId String?
+  bidderUser   User?   @relation(fields: [bidderUserId], references: [id], onDelete: SetNull)
+
+  @@index([listingId])
+  @@index([bidderWallet])
+  @@index([createdAt])
+}
+
+/// Activate vertical — a brand/community activation. Pantheon provides the
+/// underlying reward infrastructure; a Vault is that reward pool, surfaced
+/// beneath its activation rather than as its own top-level concept.
+model Activation {
+  id               String           @id @default(cuid())
+  name             String
+  description      String?
+  brandName        String
+  brandMarkUrl     String?
+  status           ActivationStatus @default(LIVE)
+  participantCount Int              @default(0)
+  startDate        DateTime         @default(now())
+  endDate          DateTime?
+  createdAt        DateTime         @default(now())
+
+  vault Vault?
+
+  @@index([status])
+}
+
+/// Reward pool backing an Activation. Powered by Pantheon.
+model Vault {
+  id           String   @id @default(cuid())
+  name         String
+  /// Total committed reward pool, in whole currency units.
+  totalRewards Int
+  /// Portion already paid out to participants.
+  distributed  Int      @default(0)
+  currency     String   @default("USDC")
+  createdAt    DateTime @default(now())
+
+  activationId String     @unique
+  activation   Activation @relation(fields: [activationId], references: [id], onDelete: Cascade)
+}
+
+/// Creator Studio vertical — a creator's own token economy. Deliberately holds
+/// no market price/TVL fields: the unit of account here is audience and
+/// revenue share, not speculation.
+model CreatorToken {
+  id              String   @id @default(cuid())
+  symbol          String   @unique
+  name            String
+  holders         Int      @default(0)
+  supply          Int
+  /// Percentage of the creator's media revenue routed to holders.
+  revenueSharePct Float?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  creatorId String         @unique
+  creator   CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+}
